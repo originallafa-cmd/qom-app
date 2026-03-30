@@ -7,6 +7,8 @@ export default function StaffLogin() {
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [staffName, setStaffName] = useState("");
+  const [showWelcome, setShowWelcome] = useState(false);
   const [lang, setLang] = useState<"en" | "fil">("en");
   const router = useRouter();
 
@@ -15,15 +17,17 @@ export default function StaffLogin() {
       title: "Queen of Mahshi",
       subtitle: "Staff Login",
       enterPin: "Enter your 4-digit PIN",
-      login: "Login",
       wrongPin: "Wrong PIN. Try again.",
+      welcome: "Welcome,",
+      redirecting: "Opening your dashboard...",
     },
     fil: {
       title: "Queen of Mahshi",
       subtitle: "Staff Login",
       enterPin: "Ilagay ang iyong 4-digit PIN",
-      login: "Mag-login",
       wrongPin: "Maling PIN. Subukan ulit.",
+      welcome: "Maligayang pagdating,",
+      redirecting: "Binubuksan ang dashboard...",
     },
   };
 
@@ -43,8 +47,13 @@ export default function StaffLogin() {
       });
 
       if (res.ok) {
-        router.push("/staff/sales");
-        router.refresh();
+        const data = await res.json();
+        setStaffName(data.name);
+        setShowWelcome(true);
+        setTimeout(() => {
+          router.push("/staff/sales");
+          router.refresh();
+        }, 1500);
       } else {
         setError(t.wrongPin);
         setPin("");
@@ -64,6 +73,28 @@ export default function StaffLogin() {
 
   function handleBackspace() {
     setPin((prev) => prev.slice(0, -1));
+  }
+
+  // Welcome screen after successful login
+  if (showWelcome) {
+    return (
+      <div className="min-h-screen bg-staff-bg flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-20 h-20 bg-teal/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span className="text-4xl">👋</span>
+          </div>
+          <p className="text-staff-text2 text-sm">{t.welcome}</p>
+          <h2 className="text-2xl font-bold text-teal font-[family-name:var(--font-cairo)] mt-1">
+            {staffName}
+          </h2>
+          <p className="text-staff-text2 text-sm mt-3">{t.redirecting}</p>
+          <div className="mt-4 w-32 h-1 bg-staff-border rounded-full mx-auto overflow-hidden">
+            <div className="h-full bg-teal rounded-full animate-[loading_1.5s_ease-in-out]" style={{ animation: "loading 1.5s ease-in-out forwards" }} />
+          </div>
+          <style>{`@keyframes loading { from { width: 0% } to { width: 100% } }`}</style>
+        </div>
+      </div>
+    );
   }
 
   return (

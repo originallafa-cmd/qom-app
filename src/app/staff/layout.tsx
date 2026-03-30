@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
 
@@ -11,6 +11,7 @@ const navItems = [
   { href: "/staff/inventory", labelKey: "inventory" as const, icon: "📦" },
   { href: "/staff/production", labelKey: "production" as const, icon: "🍳" },
   { href: "/staff/receiving", labelKey: "receiving" as const, icon: "🚚" },
+  { href: "/staff/help", labelKey: "back" as const, icon: "❓" },
 ];
 
 export default function StaffLayout({
@@ -21,6 +22,17 @@ export default function StaffLayout({
   const pathname = usePathname();
   const router = useRouter();
   const [locale, setLocale] = useState<Locale>("en");
+  const [staffName, setStaffName] = useState("");
+
+  useEffect(() => {
+    // Get staff name from session
+    fetch("/api/auth/staff/session")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.name) setStaffName(data.name);
+      })
+      .catch(() => {});
+  }, []);
 
   // Don't show nav on login page
   if (pathname === "/staff/login") {
@@ -37,9 +49,16 @@ export default function StaffLayout({
     <div className="min-h-screen bg-staff-bg">
       {/* Top Bar */}
       <header className="bg-staff-card border-b border-staff-border px-4 py-3 flex items-center justify-between sticky top-0 z-50">
-        <h1 className="text-lg font-bold text-teal font-[family-name:var(--font-cairo)]">
-          Queen of Mahshi
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold text-teal font-[family-name:var(--font-cairo)]">
+            QoM
+          </h1>
+          {staffName && (
+            <span className="text-xs bg-teal/10 text-teal px-2 py-0.5 rounded-full font-medium">
+              {staffName}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setLocale(locale === "en" ? "fil" : "en")}
@@ -56,29 +75,31 @@ export default function StaffLayout({
         </div>
       </header>
 
-      {/* Navigation Tabs */}
-      <nav className="bg-staff-card border-b border-staff-border px-2 flex overflow-x-auto">
+      {/* Navigation Tabs — scrollable on mobile */}
+      <nav className="bg-staff-card border-b border-staff-border px-2 flex overflow-x-auto scrollbar-none">
         {navItems.map((item) => {
-          const active = pathname.startsWith(item.href);
+          const active = item.href === "/staff/help"
+            ? pathname === "/staff/help"
+            : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors min-w-0 ${
                 active
                   ? "border-teal text-teal"
                   : "border-transparent text-staff-text2 hover:text-staff-text"
               }`}
             >
               <span>{item.icon}</span>
-              {t(locale, item.labelKey)}
+              <span className="hidden sm:inline">{item.href === "/staff/help" ? (locale === "en" ? "Help" : "Tulong") : t(locale, item.labelKey)}</span>
             </Link>
           );
         })}
       </nav>
 
-      {/* Page Content */}
-      <main className="p-4 max-w-2xl mx-auto">{children}</main>
+      {/* Page Content — responsive padding */}
+      <main className="p-4 max-w-2xl mx-auto pb-20">{children}</main>
     </div>
   );
 }

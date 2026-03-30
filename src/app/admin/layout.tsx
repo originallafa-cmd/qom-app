@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: "📊" },
@@ -9,6 +10,7 @@ const navItems = [
   { href: "/admin/inventory", label: "Inventory", icon: "📦" },
   { href: "/admin/financials", label: "Financials", icon: "🏦" },
   { href: "/admin/analytics", label: "Analytics", icon: "📈" },
+  { href: "/admin/activity", label: "Activity Log", icon: "📋" },
   { href: "/admin/settings", label: "Settings", icon: "⚙️" },
 ];
 
@@ -19,6 +21,7 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (pathname === "/admin/login") {
     return <>{children}</>;
@@ -32,16 +35,36 @@ export default function AdminLayout({
 
   return (
     <div className="min-h-screen bg-admin-bg flex">
-      {/* Sidebar */}
-      <aside className="w-60 bg-admin-card border-r border-admin-border flex flex-col fixed h-full">
-        <div className="p-4 border-b border-admin-border">
-          <h1 className="text-xl font-bold text-gold font-[family-name:var(--font-cairo)]">
-            ملكة المحشي
-          </h1>
-          <p className="text-xs text-admin-text3">Queen of Mahshi — Admin</p>
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar — hidden on mobile, toggle with hamburger */}
+      <aside
+        className={`w-60 bg-admin-card border-r border-admin-border flex flex-col fixed h-full z-50 transition-transform lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="p-4 border-b border-admin-border flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-gold font-[family-name:var(--font-cairo)]">
+              ملكة المحشي
+            </h1>
+            <p className="text-xs text-admin-text3">Queen of Mahshi — Admin</p>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden text-admin-text3 hover:text-admin-text"
+          >
+            ✕
+          </button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-1">
+        <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const active =
               item.href === "/admin"
@@ -51,6 +74,7 @@ export default function AdminLayout({
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   active
                     ? "bg-teal/10 text-teal border border-teal/20"
@@ -75,7 +99,25 @@ export default function AdminLayout({
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-60 p-6">{children}</main>
+      <div className="flex-1 lg:ml-60">
+        {/* Mobile top bar */}
+        <header className="lg:hidden sticky top-0 z-30 bg-admin-card border-b border-admin-border px-4 py-3 flex items-center justify-between">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="text-admin-text2 hover:text-admin-text"
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M3 12h18M3 6h18M3 18h18" />
+            </svg>
+          </button>
+          <h1 className="text-sm font-bold text-gold font-[family-name:var(--font-cairo)]">
+            ملكة المحشي
+          </h1>
+          <div className="w-6" />
+        </header>
+
+        <main className="p-4 lg:p-6">{children}</main>
+      </div>
     </div>
   );
 }
