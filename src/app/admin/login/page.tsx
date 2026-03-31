@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function AdminLogin() {
   const [password, setPassword] = useState("");
@@ -39,6 +40,9 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen bg-admin-bg flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
+        <div className="mb-4">
+          <Link href="/" className="text-sm text-admin-text3 hover:text-admin-text2">← Home</Link>
+        </div>
         <div className="bg-admin-card rounded-2xl border border-admin-border p-8 text-center">
           <h1 className="text-3xl font-bold text-gold font-[family-name:var(--font-cairo)] mb-1">
             ملكة المحشي
