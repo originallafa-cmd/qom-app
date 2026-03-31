@@ -51,12 +51,9 @@ export default function AdminLayout({
         }`}
       >
         <div className="p-4 border-b border-admin-border flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-gold font-[family-name:var(--font-cairo)]">
-              ملكة المحشي
-            </h1>
-            <p className="text-xs text-admin-text3">Queen of Mahshi — Admin</p>
-          </div>
+          <a href="/" className="hover:opacity-80">
+            <img src="/logo.png" alt="Queen of Mahshi" className="h-10" />
+          </a>
           <button
             onClick={() => setSidebarOpen(false)}
             className="lg:hidden text-admin-text3 hover:text-admin-text"
@@ -111,9 +108,7 @@ export default function AdminLayout({
               <path d="M3 12h18M3 6h18M3 18h18" />
             </svg>
           </button>
-          <h1 className="text-sm font-bold text-gold font-[family-name:var(--font-cairo)]">
-            ملكة المحشي
-          </h1>
+          <img src="/logo.png" alt="QoM" className="h-7" />
           <div className="w-6" />
         </header>
 
