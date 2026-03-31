@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { APP_VERSION } from "@/lib/version";
 
 export default function Home() {
   return (
@@ -22,8 +23,8 @@ export default function Home() {
             Admin Portal
           </Link>
         </div>
+        <p className="text-xs text-admin-text3">v{APP_VERSION}</p>
       </div>
     </div>
   );
 }
-// deployed Tue Mar 31 03:24:44 AST 2026

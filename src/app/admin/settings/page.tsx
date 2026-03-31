@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { APP_VERSION, APP_BUILD_DATE } from "@/lib/version";
 
 export default function AdminSettings() {
   const [syncing, setSyncing] = useState(false);
@@ -136,6 +137,7 @@ export default function AdminSettings() {
           <InfoRow label="Bank" value="ADCB Islamic — 14333797820001" />
           <InfoRow label="Equity Reset" value="March 28, 2026" />
           <InfoRow label="MCP Endpoint" value="/api/mcp" />
+          <InfoRow label="App Version" value={`v${APP_VERSION} (${APP_BUILD_DATE})`} />
         </div>
       </div>
     </div>
