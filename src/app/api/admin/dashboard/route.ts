@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 export async function GET() {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
     const supabase = await createServiceSupabase();
     const today = new Date().toISOString().split("T")[0];
     const monthStart = today.slice(0, 7) + "-01";

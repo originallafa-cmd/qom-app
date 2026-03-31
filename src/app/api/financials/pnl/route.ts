@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month") || new Date().toISOString().slice(0, 7);
     const monthStart = month + "-01";

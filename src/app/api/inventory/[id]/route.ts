@@ -1,11 +1,15 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 export async function PUT(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
+
     const { id } = await params;
     const body = await request.json();
     const supabase = await createServiceSupabase();
@@ -32,6 +36,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
+
     const { id } = await params;
     const supabase = await createServiceSupabase();
 

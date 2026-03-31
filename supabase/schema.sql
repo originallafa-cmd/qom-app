@@ -11,9 +11,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE staff (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL,
-  pin_hash TEXT NOT NULL,
-  role TEXT NOT NULL DEFAULT 'staff' CHECK (role IN ('staff', 'admin')),
+  pin_hash TEXT NOT NULL DEFAULT '',
+  role TEXT NOT NULL DEFAULT 'staff' CHECK (role IN ('staff', 'admin', 'manager')),
   active BOOLEAN NOT NULL DEFAULT true,
+  must_change_pin BOOLEAN NOT NULL DEFAULT true,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

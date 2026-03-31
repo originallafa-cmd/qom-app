@@ -18,6 +18,8 @@ const ACTION_LABELS: Record<string, { label: string; icon: string; color: string
   delete: { label: "Deleted", icon: "🔴", color: "text-danger" },
   inventory_count: { label: "Counted", icon: "📦", color: "text-info" },
   update_pin: { label: "PIN Changed", icon: "🔑", color: "text-gold" },
+  change_pin: { label: "PIN Changed (self)", icon: "🔑", color: "text-gold" },
+  login: { label: "Logged in", icon: "🔐", color: "text-teal" },
 };
 
 const TABLE_LABELS: Record<string, string> = {
@@ -40,7 +42,7 @@ export default function AdminActivity() {
   useEffect(() => {
     fetch("/api/admin/activity?limit=100")
       .then((r) => r.json())
-      .then(setActivities)
+      .then((data) => setActivities(Array.isArray(data) ? data : []))
       .catch(() => setActivities([]))
       .finally(() => setLoading(false));
   }, []);

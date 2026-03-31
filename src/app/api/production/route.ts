@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { getStaffSession } from "@/lib/auth";
+import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
     const { searchParams } = new URL(request.url);
     const from = searchParams.get("from");
     const to = searchParams.get("to");
@@ -37,6 +40,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
+
     const session = await getStaffSession();
     const body = await request.json();
     const { date, item, quantity, unit, notes } = body;

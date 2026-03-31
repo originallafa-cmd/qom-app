@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
+import { requireAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 const VAULT_PATH = "D:\\vault";
 
 export async function POST() {
   try {
+    const auth = await requireAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
     const supabase = await createServiceSupabase();
     const today = new Date().toISOString().split("T")[0];
     const currentMonth = today.slice(0, 7);

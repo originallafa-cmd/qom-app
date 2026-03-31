@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 export async function GET() {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
     const supabase = await createServiceSupabase();
     const { data, error } = await supabase
       .from("equity_ledger")
@@ -21,6 +24,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
+
     const body = await request.json();
     const { date, type, amount, description } = body;
 

@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 export async function GET(request: Request) {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type"); // grocery | packaging | kitchen
     const status = searchParams.get("status"); // ok | low | out
@@ -32,6 +35,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
+
     const body = await request.json();
     const { name, type, category, qty, unit, reorder_at, usage_rate, usage_period, priority, supplier, notes } = body;
 

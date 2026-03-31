@@ -11,18 +11,15 @@ export async function POST(request: Request) {
     }
 
     const adminHash = process.env.ADMIN_PASSWORD_HASH;
-    if (!adminHash) {
-      // Fallback: if no hash set, check plain password against env
-      // This is only for initial setup
-      const adminPlain = process.env.ADMIN_PASSWORD || "admin123";
-      if (password !== adminPlain) {
-        return NextResponse.json({ error: "Invalid password" }, { status: 401 });
-      }
-    } else {
+    const adminPlain = process.env.ADMIN_PASSWORD;
+
+    if (adminHash) {
       const valid = await bcrypt.compare(password, adminHash);
-      if (!valid) {
-        return NextResponse.json({ error: "Invalid password" }, { status: 401 });
-      }
+      if (!valid) return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+    } else if (adminPlain) {
+      if (password !== adminPlain) return NextResponse.json({ error: "Invalid password" }, { status: 401 });
+    } else {
+      return NextResponse.json({ error: "Admin login not configured" }, { status: 500 });
     }
 
     await setAdminSession();

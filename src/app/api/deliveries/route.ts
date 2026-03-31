@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { getStaffSession } from "@/lib/auth";
+import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 export async function POST(request: Request) {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
+
     const session = await getStaffSession();
     const body = await request.json();
     const { supplier, items_json, notes } = body;
