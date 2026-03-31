@@ -44,7 +44,7 @@ export default function AdminLogin() {
           <Link href="/" className="text-sm text-admin-text3 hover:text-admin-text2">← Home</Link>
         </div>
         <div className="bg-admin-card rounded-2xl border border-admin-border p-8 text-center">
-          <img src="/logo.png" alt="Queen of Mahshi" className="h-16 mx-auto mb-2" />
+          <img src="/logo.png" alt="Queen of Mahshi" className="h-24 mx-auto mb-2" />
           <p className="text-admin-text2 mb-8">Admin Portal</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">

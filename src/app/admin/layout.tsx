@@ -52,7 +52,7 @@ export default function AdminLayout({
       >
         <div className="p-4 border-b border-admin-border flex items-center justify-between">
           <a href="/" className="hover:opacity-80">
-            <img src="/logo.png" alt="Queen of Mahshi" className="h-10" />
+            <img src="/logo.png" alt="Queen of Mahshi" className="h-14" />
           </a>
           <button
             onClick={() => setSidebarOpen(false)}

@@ -241,7 +241,7 @@ export default function StaffLogin() {
         </div>
 
         <div className="bg-staff-card rounded-2xl shadow-lg border border-staff-border p-6 text-center">
-          <img src="/logo.png" alt="Queen of Mahshi" className="h-16 mx-auto mb-2" />
+          <img src="/logo.png" alt="Queen of Mahshi" className="h-24 mx-auto mb-2" />
           <p className="text-staff-text2 text-sm mb-6">{t.selectName}</p>
 
           {/* Staff dropdown */}
