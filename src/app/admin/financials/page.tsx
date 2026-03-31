@@ -227,14 +227,14 @@ export default function AdminFinancials() {
 
           {showAddBank && (
             <div className="bg-admin-card rounded-xl border border-teal/30 p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <input type="date" value={bankForm.date} onChange={(e) => setBankForm({ ...bankForm, date: e.target.value })} className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-              <input value={bankForm.description} onChange={(e) => setBankForm({ ...bankForm, description: e.target.value })} placeholder="Description" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm col-span-2" />
-              <select value={bankForm.biz_or_personal} onChange={(e) => setBankForm({ ...bankForm, biz_or_personal: e.target.value })} className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
+              <div><label className="block text-[10px] text-admin-text3 mb-1">Date</label><input type="date" value={bankForm.date} onChange={(e) => setBankForm({ ...bankForm, date: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+              <div className="col-span-2"><label className="block text-[10px] text-admin-text3 mb-1">Description</label><input value={bankForm.description} onChange={(e) => setBankForm({ ...bankForm, description: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+              <div><label className="block text-[10px] text-admin-text3 mb-1">Type</label><select value={bankForm.biz_or_personal} onChange={(e) => setBankForm({ ...bankForm, biz_or_personal: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
                 <option value="biz">Business</option><option value="personal">Personal</option>
-              </select>
-              <input type="number" value={bankForm.debit} onChange={(e) => setBankForm({ ...bankForm, debit: e.target.value })} placeholder="Debit" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-              <input type="number" value={bankForm.credit} onChange={(e) => setBankForm({ ...bankForm, credit: e.target.value })} placeholder="Credit" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-              <input type="number" value={bankForm.balance} onChange={(e) => setBankForm({ ...bankForm, balance: e.target.value })} placeholder="Balance after" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
+              </select></div>
+              <div><label className="block text-[10px] text-admin-text3 mb-1">Debit</label><input type="number" value={bankForm.debit} onChange={(e) => setBankForm({ ...bankForm, debit: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+              <div><label className="block text-[10px] text-admin-text3 mb-1">Credit</label><input type="number" value={bankForm.credit} onChange={(e) => setBankForm({ ...bankForm, credit: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+              <div><label className="block text-[10px] text-admin-text3 mb-1">Balance after</label><input type="number" value={bankForm.balance} onChange={(e) => setBankForm({ ...bankForm, balance: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
               <button onClick={addBankTx} className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium">Save</button>
             </div>
           )}
@@ -294,13 +294,13 @@ export default function AdminFinancials() {
           {showAddEquity && (
             <div className="bg-admin-card rounded-xl border border-teal/30 p-4 space-y-3">
               <div className="grid grid-cols-3 gap-3">
-                <select value={equityForm.type} onChange={(e) => setEquityForm({ ...equityForm, type: e.target.value })} className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
+                <div><label className="block text-[10px] text-admin-text3 mb-1">Type</label><select value={equityForm.type} onChange={(e) => setEquityForm({ ...equityForm, type: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
                   <option value="personal_from_biz">Personal from Biz (takes)</option>
                   <option value="personal_into_biz">Personal into Biz (repays)</option>
                   <option value="adjustment">Adjustment</option>
-                </select>
-                <input type="number" value={equityForm.amount} onChange={(e) => setEquityForm({ ...equityForm, amount: e.target.value })} placeholder="Amount" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-                <input value={equityForm.description} onChange={(e) => setEquityForm({ ...equityForm, description: e.target.value })} placeholder="Description" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
+                </select></div>
+                <div><label className="block text-[10px] text-admin-text3 mb-1">Amount</label><input type="number" value={equityForm.amount} onChange={(e) => setEquityForm({ ...equityForm, amount: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+                <div><label className="block text-[10px] text-admin-text3 mb-1">Description</label><input value={equityForm.description} onChange={(e) => setEquityForm({ ...equityForm, description: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
               </div>
               <button onClick={addEquity} className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium">Save</button>
             </div>
@@ -355,16 +355,16 @@ export default function AdminFinancials() {
 
           {showAddExpense && (
             <div className="bg-admin-card rounded-xl border border-teal/30 p-4 grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <input value={expenseForm.item} onChange={(e) => setExpenseForm({ ...expenseForm, item: e.target.value })} placeholder="Item/Description" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm col-span-2" />
-              <input type="number" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })} placeholder="Amount" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-              <select value={expenseForm.category} onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })} className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
+              <div className="col-span-2"><label className="block text-[10px] text-admin-text3 mb-1">Item / Description</label><input value={expenseForm.item} onChange={(e) => setExpenseForm({ ...expenseForm, item: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+              <div><label className="block text-[10px] text-admin-text3 mb-1">Amount</label><input type="number" value={expenseForm.amount} onChange={(e) => setExpenseForm({ ...expenseForm, amount: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+              <div><label className="block text-[10px] text-admin-text3 mb-1">Category</label><select value={expenseForm.category} onChange={(e) => setExpenseForm({ ...expenseForm, category: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
                 {EXPENSE_CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c.replace("_", " ")}</option>
                 ))}
-              </select>
-              <select value={expenseForm.status} onChange={(e) => setExpenseForm({ ...expenseForm, status: e.target.value })} className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
+              </select></div>
+              <div><label className="block text-[10px] text-admin-text3 mb-1">Status</label><select value={expenseForm.status} onChange={(e) => setExpenseForm({ ...expenseForm, status: e.target.value })} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
                 <option value="pending">Pending</option><option value="paid">Paid</option><option value="overdue">Overdue</option>
-              </select>
+              </select></div>
               <input value={expenseForm.notes} onChange={(e) => setExpenseForm({ ...expenseForm, notes: e.target.value })} placeholder="Notes" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm col-span-2" />
               <button onClick={addExpense} className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium">Save</button>
             </div>

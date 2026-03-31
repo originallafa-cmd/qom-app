@@ -139,7 +139,6 @@ export default function StaffLogin() {
           <div className="mt-6 w-32 h-1 bg-staff-border rounded-full mx-auto overflow-hidden">
             <div className="h-full bg-teal rounded-full" style={{ animation: "loading 1.2s ease-in-out forwards" }} />
           </div>
-          <style>{`@keyframes loading { from { width: 0% } to { width: 100% } }`}</style>
         </div>
       </div>
     );

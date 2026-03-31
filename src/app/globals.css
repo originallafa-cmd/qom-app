@@ -44,3 +44,8 @@
     font-family: var(--font-cairo);
   }
 }
+
+@keyframes loading {
+  from { width: 0%; }
+  to { width: 100%; }
+}

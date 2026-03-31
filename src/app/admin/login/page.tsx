@@ -50,7 +50,9 @@ export default function AdminLogin() {
           <p className="text-admin-text2 mb-8">Admin Portal</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <label htmlFor="admin-pw" className="sr-only">Password</label>
             <input
+              id="admin-pw"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

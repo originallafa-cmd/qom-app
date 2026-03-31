@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 interface DeliveryItem {
+  _key: string;
   name: string;
   qty: string;
   unit: string;
@@ -12,7 +13,7 @@ export default function StaffReceiving() {
   const [lang, setLang] = useState<"en" | "fil">("en");
   const [supplier, setSupplier] = useState("");
   const [items, setItems] = useState<DeliveryItem[]>([
-    { name: "", qty: "", unit: "pcs" },
+    { _key: crypto.randomUUID(), name: "", qty: "", unit: "pcs" },
   ]);
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,7 +50,7 @@ export default function StaffReceiving() {
   const tx = t[lang];
 
   function addItem() {
-    setItems([...items, { name: "", qty: "", unit: "pcs" }]);
+    setItems([...items, { _key: crypto.randomUUID(), name: "", qty: "", unit: "pcs" }]);
   }
 
   function updateItem(i: number, field: keyof DeliveryItem, value: string) {
@@ -88,7 +89,7 @@ export default function StaffReceiving() {
       if (res.ok) {
         setSuccess(true);
         setSupplier("");
-        setItems([{ name: "", qty: "", unit: "pcs" }]);
+        setItems([{ _key: crypto.randomUUID(), name: "", qty: "", unit: "pcs" }]);
         setNotes("");
         setTimeout(() => setSuccess(false), 3000);
       }
@@ -136,7 +137,7 @@ export default function StaffReceiving() {
           <h3 className="font-semibold text-staff-text mb-3">{tx.items}</h3>
           <div className="space-y-2">
             {items.map((item, i) => (
-              <div key={i} className="flex gap-2">
+              <div key={item._key} className="flex gap-2">
                 <input
                   type="text"
                   value={item.name}

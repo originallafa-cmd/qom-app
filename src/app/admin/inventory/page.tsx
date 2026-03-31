@@ -62,18 +62,12 @@ export default function AdminInventory() {
     }
   }, [tab, search]);
 
-  // Fetch counts for all tabs
+  // Fetch counts for all tabs — single request
   useEffect(() => {
-    async function fetchCounts() {
-      const results: Record<string, number> = {};
-      for (const t of ["grocery", "packaging", "kitchen"]) {
-        const res = await fetch(`/api/inventory?type=${t}`);
-        const data = await res.json();
-        results[t] = Array.isArray(data) ? data.length : 0;
-      }
-      setCounts(results as typeof counts);
-    }
-    fetchCounts();
+    fetch("/api/inventory/counts")
+      .then((r) => r.json())
+      .then((data) => { if (data.grocery !== undefined) setCounts(data); })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -204,7 +198,9 @@ export default function AdminInventory() {
       )}
 
       {/* Search */}
+      <label className="sr-only" htmlFor="inv-search">Search items</label>
       <input
+        id="inv-search"
         type="text"
         value={search}
         onChange={(e) => setSearch(e.target.value)}
@@ -217,20 +213,20 @@ export default function AdminInventory() {
         <div className="bg-admin-card rounded-xl border border-teal/30 p-4 space-y-3">
           <h3 className="text-sm font-semibold text-teal">Add New Item to {tab}</h3>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Name *" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-            <input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} placeholder="Category" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-            <input type="number" value={newQty} onChange={(e) => setNewQty(e.target.value)} placeholder="Qty" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-            <select value={newUnit} onChange={(e) => setNewUnit(e.target.value)} className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
+            <div><label className="block text-[10px] text-admin-text3 mb-1">Name *</label><input value={newName} onChange={(e) => setNewName(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+            <div><label className="block text-[10px] text-admin-text3 mb-1">Category</label><input value={newCategory} onChange={(e) => setNewCategory(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+            <div><label className="block text-[10px] text-admin-text3 mb-1">Qty</label><input type="number" value={newQty} onChange={(e) => setNewQty(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+            <div><label className="block text-[10px] text-admin-text3 mb-1">Unit</label><select value={newUnit} onChange={(e) => setNewUnit(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
               <option value="pcs">pcs</option><option value="kg">kg</option><option value="boxes">boxes</option><option value="bags">bags</option><option value="bottles">bottles</option><option value="cans">cans</option><option value="packets">packets</option><option value="liters">liters</option><option value="rolls">rolls</option><option value="trays">trays</option>
-            </select>
-            <input type="number" value={newReorder} onChange={(e) => setNewReorder(e.target.value)} placeholder="Reorder at" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-            <input type="number" value={newUsageRate} onChange={(e) => setNewUsageRate(e.target.value)} placeholder="Usage rate" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" />
-            <select value={newUsagePeriod} onChange={(e) => setNewUsagePeriod(e.target.value)} className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
+            </select></div>
+            <div><label className="block text-[10px] text-admin-text3 mb-1">Reorder at</label><input type="number" value={newReorder} onChange={(e) => setNewReorder(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+            <div><label className="block text-[10px] text-admin-text3 mb-1">Usage rate</label><input type="number" value={newUsageRate} onChange={(e) => setNewUsageRate(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm" /></div>
+            <div><label className="block text-[10px] text-admin-text3 mb-1">Usage period</label><select value={newUsagePeriod} onChange={(e) => setNewUsagePeriod(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
               <option value="weekly">Per week</option><option value="daily">Per day</option>
-            </select>
-            <select value={newPriority} onChange={(e) => setNewPriority(e.target.value)} className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
+            </select></div>
+            <div><label className="block text-[10px] text-admin-text3 mb-1">Priority</label><select value={newPriority} onChange={(e) => setNewPriority(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm">
               <option value="critical">Critical</option><option value="high">High</option><option value="normal">Normal</option><option value="low">Low</option>
-            </select>
+            </select></div>
             <input value={newSupplier} onChange={(e) => setNewSupplier(e.target.value)} placeholder="Supplier" className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm col-span-2" />
           </div>
           <div className="flex gap-2">

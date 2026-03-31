@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 interface ExpenseRow {
+  _key: string;
   description: string;
   amount: string;
   category: string;
@@ -38,7 +39,7 @@ export default function StaffSalesEntry() {
   const [ptCash, setPtCash] = useState("");
   const [notes, setNotes] = useState("");
   const [expenseRows, setExpenseRows] = useState<ExpenseRow[]>([
-    { description: "", amount: "", category: "vegetables" },
+    { _key: crypto.randomUUID(), description: "", amount: "", category: "vegetables" },
   ]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -136,7 +137,7 @@ export default function StaffSalesEntry() {
   function addExpenseRow() {
     setExpenseRows([
       ...expenseRows,
-      { description: "", amount: "", category: "vegetables" },
+      { _key: crypto.randomUUID(), description: "", amount: "", category: "vegetables" },
     ]);
   }
 
@@ -187,7 +188,7 @@ export default function StaffSalesEntry() {
         setTalabat("");
         setPtCash("");
         setNotes("");
-        setExpenseRows([{ description: "", amount: "", category: "vegetables" }]);
+        setExpenseRows([{ _key: crypto.randomUUID(), description: "", amount: "", category: "vegetables" }]);
         fetchRecent();
         setTimeout(() => setSuccess(false), 3000);
       } else {
@@ -326,7 +327,7 @@ export default function StaffSalesEntry() {
           <h3 className="font-semibold text-staff-text mb-3">{tx.expenses}</h3>
           <div className="space-y-3">
             {expenseRows.map((row, i) => (
-              <div key={i} className="flex gap-2">
+              <div key={row._key} className="flex gap-2">
                 <input
                   type="text"
                   value={row.description}
