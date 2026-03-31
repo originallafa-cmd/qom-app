@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { exportToExcel } from "@/lib/export-xlsx";
 
 type InventoryType = "grocery" | "packaging" | "kitchen";
 
@@ -164,12 +165,29 @@ export default function AdminInventory() {
             </p>
           )}
         </div>
-        <button
-          onClick={() => setShowAdd(!showAdd)}
-          className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium"
-        >
-          + Add Item
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => {
+              if (items.length === 0) return;
+              exportToExcel(items.map((i) => ({
+                Name: i.name, Type: i.type, Category: i.category || "", Qty: i.qty, Unit: i.unit,
+                "Reorder At": i.reorder_at, Status: i.status, "Usage Rate": i.usage_rate,
+                "Usage Period": i.usage_period, "Time Left": i.time_remaining, Priority: i.priority,
+                Supplier: i.supplier || "", Notes: i.notes || "",
+              })), `QoM_Inventory_${tab}_${new Date().toISOString().split("T")[0]}`);
+            }}
+            disabled={items.length === 0}
+            className="px-4 py-2 bg-admin-card border border-admin-border text-admin-text2 rounded-lg text-sm font-medium hover:text-admin-text disabled:opacity-40"
+          >
+            Export
+          </button>
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium"
+          >
+            + Add Item
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}

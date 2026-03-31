@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { exportToExcel } from "@/lib/export-xlsx";
 
 interface Activity {
   id: string;
@@ -62,13 +63,27 @@ export default function AdminActivity() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-admin-text font-[family-name:var(--font-cairo)]">
-          Activity Log
-        </h1>
-        <p className="text-sm text-admin-text3">
-          Track all staff actions — who did what and when
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-admin-text font-[family-name:var(--font-cairo)]">
+            Activity Log
+          </h1>
+          <p className="text-sm text-admin-text3">
+            Track all staff actions — who did what and when
+          </p>
+        </div>
+        <button
+          onClick={() => {
+            if (activities.length === 0) return;
+            exportToExcel(activities.map((a) => ({
+              Time: new Date(a.time).toLocaleString("en-GB"), Staff: a.staff, Action: a.action, Table: a.table,
+            })), `QoM_Activity_${new Date().toISOString().split("T")[0]}`);
+          }}
+          disabled={activities.length === 0}
+          className="px-4 py-2 bg-admin-card border border-admin-border text-admin-text2 rounded-lg text-sm font-medium hover:text-admin-text disabled:opacity-40"
+        >
+          Export
+        </button>
       </div>
 
       {loading ? (

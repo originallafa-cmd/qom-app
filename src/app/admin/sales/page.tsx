@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { formatAED } from "@/lib/utils";
+import { exportToExcel } from "@/lib/export-xlsx";
 import {
   BarChart,
   Bar,
@@ -101,9 +102,31 @@ export default function AdminSalesReports() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-admin-text font-[family-name:var(--font-cairo)]">
-        Sales Reports
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-admin-text font-[family-name:var(--font-cairo)]">
+          Sales Reports
+        </h1>
+        <button
+          onClick={() => {
+            if (rows.length === 0) return;
+            const exportData = (rows as DailyRow[]).map((r) => ({
+              Date: r.date || (r as unknown as AggRow).month || (r as unknown as AggRow).weekStart || "",
+              Cash: r.cash,
+              Card: r.card,
+              Talabat: r.talabat,
+              Total: r.total,
+              Expenses: r.expenses,
+              Net: r.net,
+              ...(view === "daily" ? { Notes: (r as DailyRow).notes || "", Staff: (r as DailyRow).staff_name || "" } : {}),
+            }));
+            exportToExcel(exportData, `QoM_Sales_${view}_${new Date().toISOString().split("T")[0]}`);
+          }}
+          disabled={rows.length === 0}
+          className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium disabled:opacity-40"
+        >
+          Export Excel
+        </button>
+      </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 items-end">

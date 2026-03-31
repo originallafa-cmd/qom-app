@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { formatAED } from "@/lib/utils";
+import { exportMultiSheet } from "@/lib/export-xlsx";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   LineChart, Line, PieChart, Pie,
@@ -66,7 +67,40 @@ export default function AdminAnalytics() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-admin-text font-[family-name:var(--font-cairo)]">Analytics</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-admin-text font-[family-name:var(--font-cairo)]">Analytics</h1>
+          {data && (
+            <button
+              onClick={() => {
+                const sheets = [];
+                if (data.monthlyTrends.length > 0) sheets.push({ name: "Monthly Trends", data: data.monthlyTrends.map((m) => ({
+                  Month: m.month, Revenue: m.revenue, "Avg Daily": m.avgDaily, Days: m.days,
+                  Cash: m.cash, Card: m.card, Talabat: m.talabat, Expenses: m.expenses, Net: m.net,
+                  "Cash %": m.cashPct.toFixed(1), "Card %": m.cardPct.toFixed(1), "Talabat %": m.talabatPct.toFixed(1),
+                }))});
+                if (data.dayOfWeek.length > 0) sheets.push({ name: "Day of Week", data: data.dayOfWeek.map((d) => ({
+                  Day: d.day, "Total Revenue": d.totalRevenue, "Avg Revenue": d.avgRevenue, Count: d.count,
+                }))});
+                if (data.hourlyHeatmap.length > 0) sheets.push({ name: "Hourly", data: data.hourlyHeatmap.map((h) => ({
+                  Hour: h.label, Orders: h.orders, Revenue: h.revenue, "Avg Order": h.avgOrder,
+                }))});
+                if (data.orderDistribution.length > 0) sheets.push({ name: "Order Distribution", data: data.orderDistribution.map((d) => ({
+                  Bracket: d.label, Orders: d.count, Revenue: d.revenue, "% of Total": d.pct.toFixed(1),
+                }))});
+                sheets.push({ name: "Summary", data: [{
+                  "Total Revenue": data.summary.totalRevenue, "Total Days": data.summary.totalDays,
+                  "Avg Daily": data.summary.avgDaily, "Total Orders": data.summary.totalOrders, AOV: data.summary.aov,
+                  "Best Day": data.summary.bestDay?.date, "Best Revenue": data.summary.bestDay?.total,
+                  "Worst Day": data.summary.worstDay?.date, "Worst Revenue": data.summary.worstDay?.total,
+                }]});
+                exportMultiSheet(sheets, `QoM_Analytics_${new Date().toISOString().split("T")[0]}`);
+              }}
+              className="px-3 py-1.5 bg-admin-card border border-admin-border text-admin-text2 rounded-lg text-xs font-medium hover:text-admin-text"
+            >
+              Export All
+            </button>
+          )}
+        </div>
         <div className="flex gap-2">
           <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-3 py-2 rounded-lg bg-admin-card border border-admin-border text-admin-text text-sm" />
           <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-3 py-2 rounded-lg bg-admin-card border border-admin-border text-admin-text text-sm" />

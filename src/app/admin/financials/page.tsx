@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { formatAED } from "@/lib/utils";
+import { exportToExcel, exportMultiSheet } from "@/lib/export-xlsx";
 
 type Tab = "pnl" | "bank" | "equity" | "expenses";
 
@@ -136,7 +137,34 @@ export default function AdminFinancials() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-admin-text font-[family-name:var(--font-cairo)]">Financials</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-admin-text font-[family-name:var(--font-cairo)]">Financials</h1>
+          <button
+            onClick={() => {
+              const sheets = [];
+              if (pnl) sheets.push({ name: "P&L", data: [{
+                Month: pnl.month, Days: pnl.days,
+                "Gross Cash": pnl.gross.cash, "Gross Card": pnl.gross.card, "Gross Talabat": pnl.gross.talabat, "Gross Total": pnl.gross.total,
+                "Card Fee": pnl.fees.card, "Talabat Fee": pnl.fees.talabat, "Total Fees": pnl.fees.total,
+                "Actual Revenue": pnl.actual.total, "Daily Expenses": pnl.expenses.daily, "Fixed Expenses": pnl.expenses.fixed,
+                "Total Expenses": pnl.expenses.total, "Net Profit": pnl.netProfit,
+              }]});
+              if (bankTxs.length > 0) sheets.push({ name: "Bank", data: bankTxs.map((t) => ({
+                Date: t.date, Description: t.description, Type: t.biz_or_personal, Debit: t.debit, Credit: t.credit, Balance: t.balance,
+              }))});
+              if (equityEntries.length > 0) sheets.push({ name: "Equity", data: equityEntries.map((e) => ({
+                Date: e.date, Type: e.type, Amount: e.amount, Description: e.description, "Running Total": e.running_total,
+              }))});
+              if (expenses.length > 0) sheets.push({ name: "Expenses", data: expenses.map((e) => ({
+                Month: e.month, Item: e.item, Amount: e.amount, Category: e.category, Status: e.status, Notes: e.notes,
+              }))});
+              if (sheets.length > 0) exportMultiSheet(sheets, `QoM_Financials_${month}`);
+            }}
+            className="px-3 py-1.5 bg-admin-card border border-admin-border text-admin-text2 rounded-lg text-xs font-medium hover:text-admin-text"
+          >
+            Export All
+          </button>
+        </div>
         <input
           type="month"
           value={month}
