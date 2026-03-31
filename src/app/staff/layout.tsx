@@ -9,6 +9,7 @@ import { useLang } from "@/lib/use-lang";
 
 const navItems = [
   { href: "/staff/dashboard", labelKey: "today" as const, icon: "🏠" },
+  { href: "/staff/upload", labelKey: "submit" as const, icon: "📸" },
   { href: "/staff/sales", labelKey: "dailySales" as const, icon: "💰" },
   { href: "/staff/inventory", labelKey: "inventory" as const, icon: "📦" },
   { href: "/staff/production", labelKey: "production" as const, icon: "🍳" },

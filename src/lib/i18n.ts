@@ -3,7 +3,7 @@ export type Locale = "en" | "fil";
 export const translations = {
   en: {
     // Common
-    submit: "Submit",
+    submit: "Upload",
     cancel: "Cancel",
     save: "Save",
     edit: "Edit",
@@ -75,7 +75,7 @@ export const translations = {
   },
   fil: {
     // Common
-    submit: "Isumite",
+    submit: "Upload",
     cancel: "Kanselahin",
     save: "I-save",
     edit: "I-edit",
