@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Queen of Mahshi — Dashboard v11</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --bg: #0a0f1a;
+  --card: #111827;
+  --card2: #1a2236;
+  --border: #1e293b;
+  --teal: #14b8a6;
+  --teal-dim: #0d9488;
+  --gold: #f59e0b;
+  --gold-dim: #d97706;
+  --red: #ef4444;
+  --green: #22c55e;
+  --blue: #3b82f6;
+  --purple: #a78bfa;
+  --text: #e2e8f0;
+  --text2: #94a3b8;
+  --text3: #64748b;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+.header {
+  background: linear-gradient(135deg, #0d1520 0%, #132030 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.header h1 { font-family:'Cairo',sans-serif; font-size:22px; font-weight:800; color:var(--gold); }
+.header .sub { color:var(--text2); font-size:13px; }
+.header .balance-box { text-align:right; }
+.header .balance-box .bal { font-size:20px; font-weight:700; color:var(--teal); }
+.header .balance-box .bal-label { font-size:11px; color:var(--text3); }
+
+.tabs {
+  display:flex; gap:0; background:var(--card); border-bottom:1px solid var(--border);
+  overflow-x:auto; scrollbar-width:none;
+}
+.tabs::-webkit-scrollbar { display:none; }
+.tab {
+  padding:10px 18px; font-size:13px; font-weight:600; color:var(--text3);
+  cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent;
+  transition: all 0.2s;
+}
+.tab:hover { color:var(--text2); }
+.tab.active { color:var(--teal); border-bottom-color:var(--teal); }
+
+.content { padding:20px; max-width:1200px; margin:0 auto; }
+.panel { display:none; }
+.panel.active { display:block; }
+
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.grid3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+.grid4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:16px; }
+@media(max-width:768px) {
+  .grid2,.grid3,.grid4 { grid-template-columns:1fr; }
+}
+
+.kpi {
+  background:var(--card); border:1px solid var(--border); border-radius:10px;
+  padding:16px; position:relative; overflow:hidden;
+}
+.kpi .label { font-size:11px; color:var(--text3); text-transform:uppercase; letter-spacing:0.5px; }
+.kpi .value { font-size:26px; font-weight:700; margin:4px 0; font-family:'Cairo',sans-serif; }
+.kpi .sub { font-size:12px; color:var(--text2); }
+.kpi.teal .value { color:var(--teal); }
+.kpi.gold .value { color:var(--gold); }
+.kpi.red .value { color:var(--red); }
+.kpi.green .value { color:var(--green); }
+.kpi.blue .value { color:var(--blue); }
+
+.section-title {
+  font-family:'Cairo',sans-serif; font-size:16px; font-weight:700;
+  color:var(--gold); margin:24px 0 12px; padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { background:var(--card2); color:var(--teal); font-weight:600; text-align:right; padding:8px 10px; border-bottom:1px solid var(--border); }
+th:first-child { text-align:left; }
+td { padding:7px 10px; border-bottom:1px solid #1a2030; text-align:right; color:var(--text2); }
+td:first-child { text-align:left; color:var(--text); }
+tr:hover td { background:rgba(20,184,166,0.04); }
+.highlight td { background:rgba(245,158,11,0.08); font-weight:600; color:var(--text); }
+
+.bar-chart { display:flex; flex-direction:column; gap:6px; }
+.bar-row { display:flex; align-items:center; gap:10px; }
+.bar-label { width:60px; font-size:12px; color:var(--text2); text-align:right; }
+.bar-track { flex:1; height:22px; background:var(--card2); border-radius:4px; overflow:hidden; position:relative; }
+.bar-fill { height:100%; border-radius:4px; display:flex; align-items:center; padding-left:8px; font-size:11px; font-weight:600; color:white; transition:width 0.5s; }
+.bar-val { font-size:12px; color:var(--text2); width:70px; text-align:right; }
+
+.chip { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:600; }
+.chip.green { background:rgba(34,197,94,0.15); color:var(--green); }
+.chip.red { background:rgba(239,68,68,0.15); color:var(--red); }
+.chip.gold { background:rgba(245,158,11,0.15); color:var(--gold); }
+.chip.teal { background:rgba(20,184,166,0.15); color:var(--teal); }
+
+.month-selector { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+.month-btn {
+  padding:6px 14px; border-radius:6px; border:1px solid var(--border);
+  background:var(--card); color:var(--text2); font-size:12px; font-weight:600;
+  cursor:pointer; transition:all 0.2s;
+}
+.month-btn.active { background:var(--teal); color:white; border-color:var(--teal); }
+
+.equity-box {
+  background: linear-gradient(135deg, #1a1020 0%, #201525 100%);
+  border:1px solid #2d1f3d; border-radius:12px; padding:20px;
+}
+.equity-amount { font-size:32px; font-weight:800; font-family:'Cairo',sans-serif; color:var(--red); }
+
+.note-box {
+  background:var(--card2); border-left:3px solid var(--gold);
+  padding:10px 14px; border-radius:0 6px 6px 0; margin:8px 0;
+  font-size:12px; color:var(--text2);
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>👑 Queen of Mahshi</h1>
+    <div class="sub">ملكة المحشي — Dashboard v11 · Updated Mar 29, 2026</div>
+  </div>
+  <div class="balance-box">
+    <div class="bal-label">ADCB Balance (Live)</div>
+    <div class="bal">AED 2,793 <span style="font-size:12px;opacity:0.7">(available — 518 frozen)</span></div>
+  </div>
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-tab="0">Overview</div>
+  <div class="tab" data-tab="1">Sales Reports</div>
+  <div class="tab" data-tab="2">Monthly Trends</div>
+  <div class="tab" data-tab="3">Owner Equity</div>
+  <div class="tab" data-tab="4">ADCB Reconciliation</div>
+  <div class="tab" data-tab="5">Full Expenses</div>
+  <div class="tab" data-tab="6">Daily Receipts</div>
+</div>
+
+<div class="content">
+
+<!-- ========== TAB 0: OVERVIEW ========== -->
+<div class="panel active" id="panel-0">
+  <div class="grid4">
+    <div class="kpi teal">
+      <div class="label">All-Time Revenue</div>
+      <div class="value">174,210</div>
+      <div class="sub">5 months (Nov 25 – Mar 26)</div>
+    </div>
+    <div class="kpi gold">
+      <div class="label">All-Time Expenses</div>
+      <div class="value">160,054</div>
+      <div class="sub">Direct + petty cash</div>
+    </div>
+    <div class="kpi red">
+      <div class="label">Cumulative P&L</div>
+      <div class="value" style="color:var(--green)">+13,963</div>
+      <div class="sub">Mar petty only. Direct exp ~22K pending.</div>
+    </div>
+    <div class="kpi blue">
+      <div class="label">ADCB Available</div>
+      <div class="value">2,793</div>
+      <div class="sub">518 frozen | Salaries 10,353 paid</div>
+    </div>
+  </div>
+
+  <div class="section-title">March 2026 — 31 Days ✅ CLOSED</div>
+  <div class="grid4">
+    <div class="kpi teal">
+      <div class="label">March Revenue</div>
+      <div class="value">36,029</div>
+      <div class="sub">Avg 1,162/day · 31 days</div>
+    </div>
+    <div class="kpi gold">
+      <div class="label">March Petty Expenses</div>
+      <div class="value">4,192</div>
+      <div class="sub">31 days · Net: 31,837</div>
+    </div>
+    <div class="kpi green">
+      <div class="label">March Salaries</div>
+      <div class="value">10,353</div>
+      <div class="sub">Paid Mar 31 via Al Ansari</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Best Day (Mar 12)</div>
+      <div class="value" style="color:var(--green)">3,020</div>
+      <div class="sub">Card 2,112 · Talabat 845</div>
+    </div>
+  </div>
+
+  <div class="section-title">Channel Split (March)</div>
+  <div class="grid3" style="margin-bottom:16px">
+    <div class="kpi">
+      <div class="label">Talabat</div>
+      <div class="value" style="color:var(--purple)">18,008 <span style="font-size:14px;color:var(--text3)">(50%)</span></div>
+      <div class="sub">After fees (~72%): ≈12,918</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Card / POS</div>
+      <div class="value" style="color:var(--blue)">16,276 <span style="font-size:14px;color:var(--text3)">(45%)</span></div>
+      <div class="sub">Fee 2.26% → you keep 97.7%</div>
+    </div>
+    <div class="kpi">
+      <div class="label">Cash</div>
+      <div class="value" style="color:var(--green)">1,745 <span style="font-size:14px;color:var(--text3)">(5%)</span></div>
+      <div class="sub">100% retained</div>
+    </div>
+  </div>
+
+  <div class="section-title">Key Alerts</div>
+  <div class="note-box" style="background:#dcfce7;border-color:#16a34a">✅ <b>MARCH CLOSED!</b> 36,029 AED · 31 days · 1,162/day avg. Salaries 10,353 paid.</div>
+  <div class="note-box">💰 <b>Equity:</b> ZERO ✅ — Reset Mar 28. No personal spending since. Clean slate.</div>
+  <div class="note-box">🏦 <b>ADCB: 2,793 available</b> (3,311 closing, 518 frozen). Salaries paid via Al Ansari.</div>
+  <div class="note-box">🔴 <b>Inventory:</b> Frozen Malfoof, Onion, Volcano Rolls at ZERO. Production needed!</div>
+</div>
+
+<!-- ========== TAB 1: SALES REPORTS ========== -->
+<div class="panel" id="panel-1">
+  <div class="month-selector" id="salesMonthSel"></div>
+  <div id="salesContent"></div>
+</div>
+
+<!-- ========== TAB 2: MONTHLY TRENDS ========== -->
+<div class="panel" id="panel-2">
+  <div class="section-title">Monthly Performance</div>
+  <table>
+    <tr><th>Month</th><th>Revenue</th><th>Expenses</th><th>Net</th><th>Cumulative</th><th>Status</th></tr>
+    <tr><td>Nov 2025</td><td>19,560</td><td>35,197</td><td style="color:var(--red)">-15,637</td><td style="color:var(--red)">-15,637</td><td><span class="chip red">Launch</span></td></tr>
+    <tr><td>Dec 2025</td><td>45,675</td><td>35,216</td><td style="color:var(--green)">+10,459</td><td style="color:var(--red)">-5,178</td><td><span class="chip green">Best Month</span></td></tr>
+    <tr><td>Jan 2026</td><td>38,188</td><td>41,210</td><td style="color:var(--red)">-3,022</td><td style="color:var(--red)">-8,200</td><td><span class="chip red">Slow</span></td></tr>
+    <tr><td>Feb 2026</td><td>37,993</td><td>44,395</td><td style="color:var(--red)">-6,402</td><td style="color:var(--red)">-14,602</td><td><span class="chip red">High Exp</span></td></tr>
+    <tr class="highlight"><td>Mar 2026</td><td>36,029</td><td>14,544</td><td style="color:var(--green)">+21,485</td><td style="color:var(--green)">+6,883</td><td><span class="chip gold">Ramadan + Storm</span></td></tr>
+  </table>
+  <div class="note-box" style="margin-top:12px">March expenses: Petty cash 4,192 + Salaries 10,353 = 14,544. Revenue 36,029. Direct supplier costs not fully tracked in petty — actual net likely lower.</div>
+
+  <div class="section-title">Revenue Bar Chart</div>
+  <div class="bar-chart">
+    <div class="bar-row"><div class="bar-label">Nov 25</div><div class="bar-track"><div class="bar-fill" style="width:43%;background:var(--teal)">19,560</div></div></div>
+    <div class="bar-row"><div class="bar-label">Dec 25</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--teal)">45,675</div></div></div>
+    <div class="bar-row"><div class="bar-label">Jan 26</div><div class="bar-track"><div class="bar-fill" style="width:84%;background:var(--teal)">38,188</div></div></div>
+    <div class="bar-row"><div class="bar-label">Feb 26</div><div class="bar-track"><div class="bar-fill" style="width:83%;background:var(--teal)">37,993</div></div></div>
+    <div class="bar-row"><div class="bar-label">Mar 26</div><div class="bar-track"><div class="bar-fill" style="width:79%;background:var(--gold)">36,029</div></div></div>
+  </div>
+
+  <div class="section-title">Cumulative P&L</div>
+  <div class="bar-chart">
+    <div class="bar-row"><div class="bar-label">Nov</div><div class="bar-track"><div class="bar-fill" style="width:100%;background:var(--red)">-15,637</div></div></div>
+    <div class="bar-row"><div class="bar-label">Dec</div><div class="bar-track"><div class="bar-fill" style="width:33%;background:var(--red)">-5,178</div></div></div>
+    <div class="bar-row"><div class="bar-label">Jan</div><div class="bar-track"><div class="bar-fill" style="width:53%;background:var(--red)">-8,200</div></div></div>
+    <div class="bar-row"><div class="bar-label">Feb</div><div class="bar-track"><div class="bar-fill" style="width:94%;background:var(--red)">-14,602</div></div></div>
+    <div class="bar-row"><div class="bar-label">Mar</div><div class="bar-track"><div class="bar-fill" style="width:50%;background:var(--green)">+6,883</div></div></div>
+  </div>
+</div>
+
+<!-- ========== TAB 3: OWNER EQUITY ========== -->
+<div class="panel" id="panel-3">
+  <div class="equity-box">
+    <div class="label" style="color:#a78bfa;font-size:13px">SETTLEMENT STATUS</div>
+    <div class="equity-amount" style="margin:8px 0;color:var(--green)">EVEN ✅ — AED 0</div>
+    <div style="color:var(--text2);font-size:13px">Reset Mar 28, 2026 — Mohamed & Ahmed agreed to call it even</div>
+  </div>
+
+  <div class="section-title">How We Got Here</div>
+  <table>
+    <tr><th style="text-align:left">Item</th><th>Amount</th></tr>
+    <tr><td>Historical overpayment (Ahmed)</td><td style="color:var(--red)">580</td></tr>
+    <tr><td>Mohamed personal from business (all time)</td><td>12,708</td></tr>
+    <tr><td>Mohamed personal into business (all time)</td><td style="color:var(--green)">13,008</td></tr>
+    <tr><td>Net personal (overpaid by Mohamed)</td><td style="color:var(--green)">-300</td></tr>
+    <tr><td>Calculated equity before reset</td><td>430</td></tr>
+    <tr><td colspan="2" style="border-top:2px solid var(--border)"></td></tr>
+    <tr class="highlight"><td><b>AGREED: Call it even — Mar 28, 2026</b></td><td style="color:var(--green);font-size:18px"><b>0</b></td></tr>
+  </table>
+
+  <div class="section-title">ADCB Balance Snapshot</div>
+  <div class="grid2">
+    <div class="kpi blue">
+      <div class="label">ADCB Closing (Mar 31)</div>
+      <div class="value">3,311</div>
+      <div class="sub">After salaries 10,353 paid</div>
+    </div>
+    <div class="kpi teal">
+      <div class="label">ADCB Available</div>
+      <div class="value">2,793</div>
+      <div class="sub">518 frozen</div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== TAB 4: ADCB RECONCILIATION ========== -->
+<div class="panel" id="panel-4">
+  <div class="section-title">ADCB Statement: Mar 1 – 31, 2026</div>
+  <div class="grid3" style="margin-bottom:16px">
+    <div class="kpi"><div class="label">Opening</div><div class="value" style="color:var(--text)">4,643.87</div></div>
+    <div class="kpi"><div class="label">Closing</div><div class="value" style="color:var(--text)">3,311.28</div></div>
+    <div class="kpi teal"><div class="label">Available</div><div class="value">2,793.08</div><div class="sub">518 frozen</div></div>
+  </div>
+
+  <div class="section-title">Money In: AED 28,240</div>
+  <table>
+    <tr><th style="text-align:left">Category</th><th>Txns</th><th>Amount</th></tr>
+    <tr><td>POS Settlements (Network)</td><td>25</td><td>9,634</td></tr>
+    <tr><td>Talabat Payouts</td><td>5</td><td>9,499</td></tr>
+    <tr><td style="padding-left:20px">Mar 7 — Biweekly + Balance</td><td></td><td>3,235</td></tr>
+    <tr><td style="padding-left:20px">Mar 10 — Biweekly</td><td></td><td>2,272</td></tr>
+    <tr><td style="padding-left:20px">Mar 14 — Biweekly</td><td></td><td>1,904</td></tr>
+    <tr><td style="padding-left:20px">Mar 17 — Biweekly</td><td></td><td>2,088</td></tr>
+    <tr><td>Deposits (Mohamed/Ahmed)</td><td>3</td><td>6,280</td></tr>
+    <tr><td>MohamedShalby Refund (vine leaves)</td><td>1</td><td>2,914</td></tr>
+    <tr class="highlight"><td><b>TOTAL IN</b></td><td></td><td><b>28,327</b></td></tr>
+  </table>
+
+  <div class="section-title">Money Out — Business: AED 23,016</div>
+  <table>
+    <tr><th style="text-align:left">Category</th><th>Amount</th></tr>
+    <tr><td>Salaries (ATM + transfers)</td><td>9,421</td></tr>
+    <tr><td>Cisene Transfers (petty/supplies/PT Cash)</td><td>1,676</td></tr>
+    <tr><td style="padding-left:20px">Petty: 400+150 | Sharjah: 230 | Drinks: 193 | PT grocery: 700</td><td></td></tr>
+    <tr><td>Suppliers</td><td>10,958</td></tr>
+    <tr><td style="padding-left:20px">Rukn Anab (3,000 + 3,500 = 6,500)</td><td></td></tr>
+    <tr><td style="padding-left:20px">Vine leaves + olive oil (3,668 - 2,914 refund = 754)</td><td></td></tr>
+    <tr><td style="padding-left:20px">VSTAR Pack (134 + 84 + 84 = 302)</td><td></td></tr>
+    <tr><td style="padding-left:20px">TAMM electricity (401) + Tabby fruits (52)</td><td></td></tr>
+    <tr><td>Delivery (Esam)</td><td>200</td></tr>
+    <tr><td>Talabat grocery (biz card)</td><td>761</td></tr>
+    <tr class="highlight"><td><b>TOTAL BUSINESS OUT</b></td><td><b>23,016</b></td></tr>
+  </table>
+
+  <div class="section-title">Money Out — Personal (Mohamed): AED 7,472</div>
+  <table>
+    <tr><th style="text-align:left">Category</th><th>Amount</th></tr>
+    <tr><td>Tabby — Mar 9 batch (3 payments)</td><td>2,662</td></tr>
+    <tr><td>Tabby — Mar 11 batch (7 payments)</td><td>1,948</td></tr>
+    <tr><td>ADNOC petrol (9 stops)</td><td>736</td></tr>
+    <tr><td>To self ADIB/transfers + fees</td><td>906</td></tr>
+    <tr><td>Bank transfer owed (Mar 12, not yet paid)</td><td>408</td></tr>
+    <tr><td>Other personal</td><td>807</td></tr>
+    <tr><td style="padding-left:20px">Al Dhafra 336 · Beanz Gene 104 · Lulu 100</td><td></td></tr>
+    <tr><td style="padding-left:20px">Rashed Ali 70 · Smart Line 65 · Shay Al Te 61</td><td></td></tr>
+    <tr><td style="padding-left:20px">LikeCard 52 · Emirates C 50 · Dekat 20 · Other 53</td><td></td></tr>
+    <tr class="highlight"><td><b>TOTAL PERSONAL OUT</b></td><td><b>7,472</b></td></tr>
+  </table>
+</div>
+
+<!-- ========== TAB 5: FULL EXPENSES ========== -->
+<div class="panel" id="panel-5">
+  <div class="month-selector" id="expMonthSel"></div>
+  <div id="expContent"></div>
+</div>
+
+<!-- ========== TAB 6: DAILY RECEIPTS ========== -->
+<div class="panel" id="panel-6">
+  <div class="section-title">March 2026 — Daily Sales</div>
+  <table>
+    <tr><th>Date</th><th>Cash</th><th>Card</th><th>Talabat</th><th>Total</th><th>Expenses</th><th>Net</th></tr>
+  </table>
+  <div id="receiptTable"></div>
+</div>
+
+</div><!-- end content -->
+
+<script>
+// ============ DATA ============
+const MONTH_DATA = {
+  'Nov 2025': [
+    {d:'Nov 16',cash:30,card:118,tal:0,exp:20.5},
+    {d:'Nov 17',cash:0,card:314,tal:0,exp:9},
+    {d:'Nov 18',cash:184,card:1358,tal:436.2,exp:119.5},
+    {d:'Nov 19',cash:69,card:1020.7,tal:535.66,exp:489},
+    {d:'Nov 20',cash:240.5,card:411,tal:641.75,exp:93.5},
+    {d:'Nov 21',cash:0,card:307.7,tal:704.05,exp:44.5},
+    {d:'Nov 22',cash:87.5,card:725.45,tal:516.7,exp:71.5},
+    {d:'Nov 23',cash:0,card:674.4,tal:572.1,exp:436},
+    {d:'Nov 24',cash:0,card:591.35,tal:505.35,exp:57},
+    {d:'Nov 25',cash:37,card:438.95,tal:778.5,exp:56},
+    {d:'Nov 26',cash:31.5,card:895.25,tal:804.2,exp:672},
+    {d:'Nov 27',cash:31.5,card:618.95,tal:514.85,exp:34},
+    {d:'Nov 28',cash:0,card:380.25,tal:489.65,exp:8},
+    {d:'Nov 29',cash:0,card:457.1,tal:557.2,exp:120},
+    {d:'Nov 30',cash:0,card:284.5,tal:373.35,exp:74}
+  ],
+  'Dec 2025': [
+    {d:'Dec 1',cash:132.25,card:835.15,tal:706.15,exp:15},
+    {d:'Dec 2',cash:61.75,card:227,tal:391.65,exp:655.5},
+    {d:'Dec 3',cash:124,card:845.2,tal:619.7,exp:129.5},
+    {d:'Dec 4',cash:56.84,card:327.55,tal:759.25,exp:2},
+    {d:'Dec 5',cash:53.5,card:991.45,tal:1141.9,exp:293.75},
+    {d:'Dec 6',cash:0,card:566.6,tal:1212,exp:74.5},
+    {d:'Dec 7',cash:68.5,card:217.25,tal:929.65,exp:295},
+    {d:'Dec 8',cash:0,card:501.55,tal:566,exp:54.25},
+    {d:'Dec 9',cash:37,card:576.5,tal:1245.8,exp:54},
+    {d:'Dec 10',cash:0,card:264.6,tal:640.1,exp:45},
+    {d:'Dec 11',cash:0,card:65,tal:949.9,exp:9.75},
+    {d:'Dec 13',cash:0,card:341.35,tal:156.35,exp:12.75},
+    {d:'Dec 14',cash:60.5,card:535.65,tal:746.6,exp:62},
+    {d:'Dec 15',cash:0,card:396.45,tal:640.15,exp:39},
+    {d:'Dec 16',cash:97,card:542.25,tal:726.7,exp:18},
+    {d:'Dec 17',cash:0,card:486.75,tal:1080.05,exp:198},
+    {d:'Dec 18',cash:31.5,card:500.3,tal:632.65,exp:195.5},
+    {d:'Dec 19',cash:0,card:1016.4,tal:925.1,exp:111},
+    {d:'Dec 20',cash:0,card:677.35,tal:614.1,exp:80},
+    {d:'Dec 21',cash:31.5,card:445.75,tal:963,exp:105},
+    {d:'Dec 22',cash:0,card:440.85,tal:746.7,exp:161},
+    {d:'Dec 23',cash:126.5,card:658.25,tal:821.85,exp:74},
+    {d:'Dec 24',cash:100.25,card:453.6,tal:710.85,exp:83},
+    {d:'Dec 25',cash:145.5,card:803.65,tal:1142.6,exp:123},
+    {d:'Dec 26',cash:0,card:618.7,tal:1001.4,exp:85},
+    {d:'Dec 27',cash:99.75,card:536.25,tal:1009.7,exp:115},
+    {d:'Dec 28',cash:190.5,card:670.75,tal:846.15,exp:226},
+    {d:'Dec 29',cash:136.5,card:1015.05,tal:948.05,exp:135},
+    {d:'Dec 30',cash:0,card:420.3,tal:758.95,exp:74.5},
+    {d:'Dec 31',cash:131.5,card:629.8,tal:771.6,exp:60}
+  ],
+  'Jan 2026': [
+    {d:'Jan 2',cash:0,card:251.6,tal:1302.95,exp:518.5},
+    {d:'Jan 3',cash:180.5,card:829.5,tal:1049.6,exp:133},
+    {d:'Jan 4',cash:99.75,card:419.85,tal:801,exp:74.75},
+    {d:'Jan 5',cash:0,card:501.7,tal:234.5,exp:14.75},
+    {d:'Jan 6',cash:0,card:687.6,tal:1059.35,exp:28.5},
+    {d:'Jan 7',cash:31.5,card:774.05,tal:1103.95,exp:82},
+    {d:'Jan 8',cash:61.95,card:641.95,tal:1079.35,exp:118.5},
+    {d:'Jan 9',cash:161.7,card:755.35,tal:644.2,exp:74.7},
+    {d:'Jan 10',cash:0,card:351.45,tal:991.85,exp:254.5},
+    {d:'Jan 11',cash:37,card:634.15,tal:1214.45,exp:9.75},
+    {d:'Jan 12',cash:64.25,card:719.55,tal:536.8,exp:64.48},
+    {d:'Jan 13',cash:87.5,card:300.3,tal:232.1,exp:91.5},
+    {d:'Jan 14',cash:0,card:624.3,tal:786.65,exp:187},
+    {d:'Jan 15',cash:0,card:468.7,tal:1050.25,exp:60},
+    {d:'Jan 16',cash:0,card:377.35,tal:718.2,exp:90.5},
+    {d:'Jan 17',cash:0,card:439.3,tal:607.55,exp:6},
+    {d:'Jan 18',cash:31.5,card:509.85,tal:776.25,exp:36},
+    {d:'Jan 19',cash:0,card:501,tal:1096.8,exp:30},
+    {d:'Jan 20',cash:0,card:287.35,tal:658.45,exp:69.5},
+    {d:'Jan 21',cash:22.05,card:508.95,tal:738.75,exp:137},
+    {d:'Jan 22',cash:31.5,card:428.95,tal:631.85,exp:98.5},
+    {d:'Jan 23',cash:54.25,card:590.15,tal:672.75,exp:16},
+    {d:'Jan 24',cash:0,card:415.15,tal:595.45,exp:60},
+    {d:'Jan 25',cash:0,card:500.9,tal:567.45,exp:137.25},
+    {d:'Jan 26',cash:99.75,card:369.95,tal:316.7,exp:78},
+    {d:'Jan 27',cash:0,card:433.7,tal:636.2,exp:49.5},
+    {d:'Jan 28',cash:0,card:448.8,tal:616.6,exp:8},
+    {d:'Jan 29',cash:31.5,card:375.4,tal:437.7,exp:73},
+    {d:'Jan 30',cash:0,card:315.6,tal:567.95,exp:74.5},
+    {d:'Jan 31',cash:0,card:440.7,tal:481.5,exp:67}
+  ],
+  'Feb 2026': [
+    {d:'Feb 1',cash:0,card:453,tal:594,exp:722.75},
+    {d:'Feb 2',cash:0,card:1471,tal:1194.2,exp:31.5},
+    {d:'Feb 3',cash:0,card:832.05,tal:981.05,exp:170.25},
+    {d:'Feb 4',cash:3,card:242.5,tal:675,exp:92.75},
+    {d:'Feb 5',cash:3,card:740.4,tal:128.1,exp:0},
+    {d:'Feb 6',cash:0,card:791.9,tal:969.45,exp:1.25},
+    {d:'Feb 7',cash:50,card:717.5,tal:1082.25,exp:6},
+    {d:'Feb 8',cash:0,card:462.25,tal:682.25,exp:295.25},
+    {d:'Feb 9',cash:3,card:690.75,tal:751.5,exp:15},
+    {d:'Feb 10',cash:88.5,card:276.85,tal:149.1,exp:36},
+    {d:'Feb 11',cash:33.6,card:497.95,tal:1044.85,exp:375.75},
+    {d:'Feb 12',cash:0,card:392.25,tal:208.85,exp:75.25},
+    {d:'Feb 13',cash:61.25,card:521.15,tal:824.65,exp:15},
+    {d:'Feb 14',cash:0,card:515.75,tal:1051.95,exp:14},
+    {d:'Feb 15',cash:0,card:556.05,tal:935.85,exp:41},
+    {d:'Feb 16',cash:0,card:414,tal:735.35,exp:16},
+    {d:'Feb 17',cash:40.75,card:436.3,tal:1104.5,exp:149.25},
+    {d:'Feb 18',cash:0,card:617.7,tal:814.65,exp:27},
+    {d:'Feb 19',cash:0,card:426.15,tal:848.25,exp:115.25},
+    {d:'Feb 20',cash:31.5,card:536.25,tal:814.55,exp:61},
+    {d:'Feb 21',cash:0,card:494.4,tal:993.4,exp:201},
+    {d:'Feb 22',cash:59.5,card:529.7,tal:668.05,exp:0},
+    {d:'Feb 23',cash:31.5,card:440.05,tal:1156.7,exp:102},
+    {d:'Feb 24',cash:0,card:501.95,tal:879.25,exp:21},
+    {d:'Feb 25',cash:99.75,card:459.65,tal:605.95,exp:112},
+    {d:'Feb 26',cash:0,card:440.45,tal:907.15,exp:8},
+    {d:'Feb 27',cash:0,card:329.35,tal:700.75,exp:61.5},
+    {d:'Feb 28',cash:63,card:510.45,tal:1108.65,exp:64}
+  ],
+  'Mar 2026': [
+    {d:'Mar 1',cash:0,card:402.2,tal:920.35,exp:106.46},
+    {d:'Mar 2',cash:3,card:499.75,tal:647.5,exp:10},
+    {d:'Mar 3',cash:247.6,card:1004.63,tal:1192.2,exp:151.25},
+    {d:'Mar 4',cash:0,card:463.05,tal:507.7,exp:91.75},
+    {d:'Mar 5',cash:60.5,card:568.5,tal:294.75,exp:702.75},
+    {d:'Mar 6',cash:31.5,card:614.75,tal:1524.05,exp:96.75},
+    {d:'Mar 7',cash:31.5,card:670,tal:825.3,exp:271.5},
+    {d:'Mar 8',cash:35,card:559.6,tal:695.3,exp:117.25},
+    {d:'Mar 9',cash:28.35,card:441.75,tal:780.95,exp:65},
+    {d:'Mar 10',cash:224.5,card:402.45,tal:1229.55,exp:25},
+    {d:'Mar 11',cash:0,card:402.25,tal:487.6,exp:125},
+    {d:'Mar 12',cash:63.75,card:2111.56,tal:844.8,exp:3},
+    {d:'Mar 13',cash:3,card:741.55,tal:367.8,exp:86},
+    {d:'Mar 14',cash:66,card:197.25,tal:882.85,exp:25},
+    {d:'Mar 15',cash:160,card:602.15,tal:684.1,exp:63},
+    {d:'Mar 16',cash:31.5,card:627.7,tal:196.1,exp:157.25},
+    {d:'Mar 17',cash:4,card:245.75,tal:802.15,exp:670.98},
+    {d:'Mar 18',cash:0,card:203.5,tal:246.5,exp:523},
+    {d:'Mar 19',cash:0,card:1577.55,tal:961.45,exp:393.5},
+    {d:'Mar 20',cash:188,card:40,tal:698.05,exp:120.8},
+    {d:'Mar 21',cash:0,card:284.6,tal:693.45,exp:137},
+    {d:'Mar 22',cash:20,card:117.95,tal:296.05,exp:18},
+    {d:'Mar 23',cash:46,card:383.8,tal:0,exp:0},
+    {d:'Mar 24',cash:31.5,card:337.1,tal:308.95,exp:25.5},
+    {d:'Mar 25',cash:189.8,card:275.3,tal:0,exp:0},
+    {d:'Mar 26',cash:153,card:479.8,tal:639.85,exp:50},
+    {d:'Mar 27',cash:3,card:191.2,tal:0,exp:28},
+    {d:'Mar 28',cash:1,card:382.95,tal:213.10,exp:6.25},
+    {d:'Mar 29',cash:51.5,card:405.5,tal:396.5,exp:0},
+    {d:'Mar 30',cash:21,card:413.10,tal:433.95,exp:42.50},
+    {d:'Mar 31',cash:50,card:688.70,tal:237.30,exp:79.50}
+  ]
+};
+
+const EXP_DATA = {
+  'Feb 2026': [
+    {item:'ركن العنب — Rukn Anab',amt:8401,status:'Partial (3K paid Mar 11)'},
+    {item:'معاشات الموظفات — Staff Salaries',amt:7000,status:'Paid'},
+    {item:'معاش سيلين — Cisene Salary',amt:2300,status:'Paid'},
+    {item:'ياس مارت سيلين — Yas Mart',amt:700,status:'Paid'},
+    {item:'كهربا — Electricity (TAMM)',amt:401,status:'Paid'},
+    {item:'طلبات سموبسه — Talabat Sambousa',amt:250,status:'Paid'},
+    {item:'توصيل من الشارجة — Sharjah Delivery',amt:230,status:'Paid'},
+    {item:'مشروبات غازية — Soft Drinks',amt:193,status:'Paid'},
+    {item:'بي تي كاش — Petty Cash',amt:150,status:'Paid'},
+    {item:'ڤي ستار — V Star',amt:133.75,status:'Paid'},
+    {item:'الولو — Lulu',amt:100,status:'Paid'}
+  ],
+  'Mar 2026': [
+    {item:'ركن العنب — Rukn Anab (Invoice #475)',amt:8401,status:'✅ PAID IN FULL (3K+3.5K+1.9K)'},
+    {item:'معاشات الموظفات — Staff Salaries',amt:7000,status:'Paid'},
+    {item:'معاش سيلين — Cisene Salary',amt:2300,status:'Paid'},
+    {item:'ورق عنب وزيت — Vine leaves refund / Olive oil net',amt:754,status:'Paid (refund 2,914)'},
+    {item:'ياس مارت سيلين — Yas Mart',amt:700,status:'Paid'},
+    {item:'بي تي كاش — PT Cash (grocery)',amt:700,status:'Paid Mar 17'},
+    {item:'كهربا — Electricity',amt:401,status:'Paid'},
+    {item:'طلبات سموبسه — Talabat Sambousa',amt:250,status:'Est.'},
+    {item:'توصيل من الشارجة — Sharjah Delivery',amt:230,status:'Paid'},
+    {item:'توصيل — Delivery (Esam)',amt:200,status:'Paid'},
+    {item:'مشروبات غازية — Soft Drinks',amt:193,status:'Paid'},
+    {item:'ڤي ستار — V Star (packaging)',amt:133.75,status:'Paid'},
+    {item:'ڤي ستار — V Star (bags ×2)',amt:168,status:'Paid'},
+    {item:'بي تي كاش — Petty Cash',amt:150,status:'Paid'},
+    {item:'الولو — Lulu',amt:100,status:'Paid'},
+    {item:'طلبات فروتيز — Tabby biz (fruits)',amt:51.83,status:'Paid'}
+  ]
+};
+
+// ============ TAB SWITCHING ============
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+// ============ SALES TAB ============
+function renderSales(month) {
+  const data = MONTH_DATA[month];
+  if (!data) return;
+  let totalCash=0,totalCard=0,totalTal=0,totalExp=0;
+  data.forEach(r => { totalCash+=r.cash; totalCard+=r.card; totalTal+=r.tal; totalExp+=r.exp; });
+  const totalRev = totalCash+totalCard+totalTal;
+  const talAfterFees = totalTal * 0.69;
+
+  let html = `<div class="grid4" style="margin-bottom:16px">
+    <div class="kpi teal"><div class="label">Revenue</div><div class="value">${fmt(totalRev)}</div><div class="sub">${data.length} days · Avg ${fmt(Math.round(totalRev/data.length))}/day</div></div>
+    <div class="kpi gold"><div class="label">Petty Expenses</div><div class="value">${fmt(totalExp)}</div></div>
+    <div class="kpi green"><div class="label">Net (petty only)</div><div class="value">${fmt(totalRev-totalExp)}</div></div>
+    <div class="kpi"><div class="label">Talabat After Fees</div><div class="value" style="color:var(--purple)">${fmt(Math.round(talAfterFees))}</div><div class="sub">Gross ${fmt(totalTal)} × 69%</div></div>
+  </div>`;
+
+  html += `<div class="section-title">Channel Breakdown</div>
+  <div class="bar-chart" style="margin-bottom:16px">
+    <div class="bar-row"><div class="bar-label">Talabat</div><div class="bar-track"><div class="bar-fill" style="width:${(totalTal/totalRev*100).toFixed(0)}%;background:var(--purple)">${(totalTal/totalRev*100).toFixed(0)}%</div></div><div class="bar-val">${fmt(totalTal)}</div></div>
+    <div class="bar-row"><div class="bar-label">Card</div><div class="bar-track"><div class="bar-fill" style="width:${(totalCard/totalRev*100).toFixed(0)}%;background:var(--blue)">${(totalCard/totalRev*100).toFixed(0)}%</div></div><div class="bar-val">${fmt(totalCard)}</div></div>
+    <div class="bar-row"><div class="bar-label">Cash</div><div class="bar-track"><div class="bar-fill" style="width:${Math.max(totalCash/totalRev*100,2).toFixed(0)}%;background:var(--green)">${(totalCash/totalRev*100).toFixed(0)}%</div></div><div class="bar-val">${fmt(totalCash)}</div></div>
+  </div>`;
+
+  html += `<div class="section-title">Daily Detail</div><table>
+    <tr><th>Date</th><th>Cash</th><th>Card</th><th>Talabat</th><th>Total</th><th>Expenses</th><th>Net</th></tr>`;
+  data.forEach(r => {
+    const tot = r.cash+r.card+r.tal;
+    html += `<tr><td>${r.d}</td><td>${fmt(r.cash)}</td><td>${fmt(r.card)}</td><td>${fmt(r.tal)}</td><td>${fmt(tot)}</td><td>${fmt(r.exp)}</td><td>${fmt(tot-r.exp)}</td></tr>`;
+  });
+  html += `<tr class="highlight"><td><b>TOTAL</b></td><td><b>${fmt(totalCash)}</b></td><td><b>${fmt(totalCard)}</b></td><td><b>${fmt(totalTal)}</b></td><td><b>${fmt(totalRev)}</b></td><td><b>${fmt(totalExp)}</b></td><td><b>${fmt(totalRev-totalExp)}</b></td></tr>`;
+  html += `</table>`;
+
+  document.getElementById('salesContent').innerHTML = html;
+}
+
+// ============ EXPENSES TAB ============
+function renderExpenses(month) {
+  const data = EXP_DATA[month];
+  if (!data) { document.getElementById('expContent').innerHTML = '<div class="note-box">No expense data for this month yet.</div>'; return; }
+  let total = 0;
+  data.forEach(e => total += e.amt);
+  let html = `<div class="kpi gold" style="margin-bottom:16px"><div class="label">Total Direct Expenses</div><div class="value">${fmt(total)}</div><div class="sub">${data.length} items</div></div>`;
+  html += `<table><tr><th style="text-align:left">Item</th><th>Amount</th><th>Status</th></tr>`;
+  data.forEach(e => {
+    const statusClass = e.status === 'Paid' ? 'green' : (e.status.includes('⏳') ? 'gold' : 'teal');
+    html += `<tr><td>${e.item}</td><td>${fmt(e.amt)}</td><td><span class="chip ${statusClass}">${e.status}</span></td></tr>`;
+  });
+  html += `<tr class="highlight"><td><b>TOTAL</b></td><td><b>${fmt(total)}</b></td><td></td></tr></table>`;
+  document.getElementById('expContent').innerHTML = html;
+}
+
+// ============ RECEIPTS TAB ============
+function renderReceipts() {
+  const data = MONTH_DATA['Mar 2026'];
+  let html = `<table><tr><th>Date</th><th>Cash</th><th>Card</th><th>Talabat</th><th>Total</th><th>Expenses</th><th>Net</th></tr>`;
+  let tC=0,tCa=0,tT=0,tE=0;
+  data.forEach(r => {
+    const tot=r.cash+r.card+r.tal;
+    tC+=r.cash;tCa+=r.card;tT+=r.tal;tE+=r.exp;
+    html+=`<tr><td>${r.d}</td><td>${fmt(r.cash)}</td><td>${fmt(r.card)}</td><td>${fmt(r.tal)}</td><td>${fmt(tot)}</td><td>${fmt(r.exp)}</td><td>${fmt(tot-r.exp)}</td></tr>`;
+  });
+  const tR=tC+tCa+tT;
+  html+=`<tr class="highlight"><td><b>TOTAL</b></td><td><b>${fmt(tC)}</b></td><td><b>${fmt(tCa)}</b></td><td><b>${fmt(tT)}</b></td><td><b>${fmt(tR)}</b></td><td><b>${fmt(tE)}</b></td><td><b>${fmt(tR-tE)}</b></td></tr></table>`;
+  document.getElementById('receiptTable').innerHTML = html;
+}
+
+// ============ MONTH SELECTORS ============
+function buildMonthSelector(containerId, months, callback) {
+  const el = document.getElementById(containerId);
+  months.forEach((m,i) => {
+    const btn = document.createElement('div');
+    btn.className = 'month-btn' + (i === months.length-1 ? ' active' : '');
+    btn.textContent = m;
+    btn.onclick = () => {
+      el.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      callback(m);
+    };
+    el.appendChild(btn);
+  });
+  callback(months[months.length-1]);
+}
+
+const salesMonths = Object.keys(MONTH_DATA);
+const expMonths = Object.keys(EXP_DATA);
+buildMonthSelector('salesMonthSel', salesMonths, renderSales);
+buildMonthSelector('expMonthSel', expMonths, renderExpenses);
+renderReceipts();
+
+function fmt(n) { return Number(n).toLocaleString('en',{minimumFractionDigits:0,maximumFractionDigits:2}); }
+</script>
+</body>
+</html>
