@@ -45,8 +45,7 @@ export default function StaffLayout({
 
   async function handleLogout() {
     await fetch("/api/auth/staff/logout", { method: "POST" });
-    router.push("/staff/login");
-    router.refresh();
+    window.location.href = "/staff/login";
   }
 
   return (

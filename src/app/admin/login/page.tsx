@@ -24,8 +24,8 @@ export default function AdminLogin() {
       });
 
       if (res.ok) {
-        router.push("/admin");
-        router.refresh();
+        window.location.href = "/admin";
+        return;
       } else {
         setError("Invalid password");
         setPassword("");

@@ -91,7 +91,7 @@ export default function StaffLogin() {
           setStep("change");
         } else {
           setStep("welcome");
-          setTimeout(() => { router.push("/staff/dashboard"); router.refresh(); }, 1200);
+          setTimeout(() => { window.location.href = "/staff/dashboard"; }, 1200);
         }
       } else {
         setError(t.wrongPin);
@@ -113,7 +113,7 @@ export default function StaffLogin() {
       });
       if (res.ok) {
         setStep("welcome");
-        setTimeout(() => { router.push("/staff/dashboard"); router.refresh(); }, 1200);
+        setTimeout(() => { window.location.href = "/staff/dashboard"; }, 1200);
       } else { setError("Failed"); }
     } catch { setError("Error"); }
     setLoading(false);
