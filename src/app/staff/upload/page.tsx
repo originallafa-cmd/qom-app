@@ -344,7 +344,10 @@ export default function StaffUpload() {
 
       {/* REVIEW STEP (data extracted, confirm) */}
       {step === "review" && result && (
-        <div className="bg-staff-card rounded-2xl border border-staff-border p-5">
+        <div className="bg-staff-card rounded-2xl border border-staff-border p-5 relative">
+          {/* Close / cancel button */}
+          <button onClick={reset} className="absolute top-3 right-3 w-8 h-8 rounded-full bg-staff-bg border border-staff-border flex items-center justify-center text-staff-text2 hover:text-danger text-lg">×</button>
+
           {previewUrl && (
             <img src={previewUrl} alt="Upload" className="w-full max-h-36 object-contain rounded-xl mb-4" />
           )}
