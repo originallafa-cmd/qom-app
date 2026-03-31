@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 // Check all alert conditions and create notifications
 export async function POST() {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
     const supabase = await createServiceSupabase();
     const created: string[] = [];
 

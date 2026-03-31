@@ -1,12 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function AdminSettings() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [pinForm, setPinForm] = useState({ staffName: "", newPin: "" });
   const [pinMsg, setPinMsg] = useState("");
+  const [pinMsgType, setPinMsgType] = useState<"success" | "error">("success");
+  const [staffList, setStaffList] = useState<{ id: string; name: string; role: string }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/auth/staff/list")
+      .then((r) => r.json())
+      .then((data) => setStaffList(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
 
   async function handleVaultSync() {
     setSyncing(true);
@@ -36,10 +45,12 @@ export default function AdminSettings() {
       });
       if (res.ok) {
         setPinMsg(`PIN updated for ${pinForm.staffName}`);
+        setPinMsgType("success");
         setPinForm({ staffName: "", newPin: "" });
       } else {
         const data = await res.json();
         setPinMsg(data.error || "Failed");
+        setPinMsgType("error");
       }
     } catch {
       setPinMsg("Error");
@@ -85,11 +96,9 @@ export default function AdminSettings() {
               className="px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm"
             >
               <option value="">Select staff</option>
-              <option value="Cisene">Cisene</option>
-              <option value="Rose Catherine">Rose Catherine</option>
-              <option value="Malimie">Malimie</option>
-              <option value="Mae Ann">Mae Ann</option>
-              <option value="Reyana">Reyana</option>
+              {staffList.map((s) => (
+                <option key={s.id} value={s.name}>{s.name} ({s.role})</option>
+              ))}
             </select>
           </div>
           <div>
@@ -111,7 +120,7 @@ export default function AdminSettings() {
             Set PIN
           </button>
         </div>
-        {pinMsg && <p className="text-sm mt-2 text-teal">{pinMsg}</p>}
+        {pinMsg && <p className={`text-sm mt-2 ${pinMsgType === "success" ? "text-success" : "text-danger"}`}>{pinMsg}</p>}
       </div>
 
       {/* App Info */}

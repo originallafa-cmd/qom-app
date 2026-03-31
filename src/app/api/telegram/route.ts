@@ -78,7 +78,9 @@ export async function POST(request: Request) {
     // --- SALES MONTH ---
     if (text.includes("sales march") || text.includes("sales feb") || text.includes("month") || text === "/month") {
       const month = new Date().toISOString().slice(0, 7);
-      const { data } = await supabase.from("daily_sales").select("*").gte("date", month + "-01").lte("date", month + "-31").order("date");
+      const [y, m] = month.split("-").map(Number);
+      const monthEnd = `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
+      const { data } = await supabase.from("daily_sales").select("*").gte("date", month + "-01").lte("date", monthEnd).order("date");
       const sales = data || [];
       const total = sales.reduce((s, r) => s + (r.total || 0), 0);
       const cash = sales.reduce((s, r) => s + (r.cash || 0), 0);

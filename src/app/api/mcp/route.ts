@@ -67,7 +67,8 @@ export async function POST(request: Request) {
       case "get_monthly_summary": {
         const { month } = params;
         const start = month + "-01";
-        const end = month + "-31";
+        const [y, m] = month.split("-").map(Number);
+        const end = `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
         const { data } = await supabase.from("daily_sales").select("*").gte("date", start).lte("date", end).order("date");
         const sales = data || [];
         const total = sales.reduce((s, r) => s + (r.total || 0), 0);

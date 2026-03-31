@@ -14,9 +14,16 @@ export async function PUT(
     const body = await request.json();
     const supabase = await createServiceSupabase();
 
+    // Whitelist allowed fields only
+    const allowed: Record<string, unknown> = {};
+    const ALLOWED_FIELDS = ["name", "category", "qty", "unit", "reorder_at", "usage_rate", "usage_period", "priority", "supplier", "notes"];
+    for (const key of ALLOWED_FIELDS) {
+      if (body[key] !== undefined) allowed[key] = body[key];
+    }
+
     const { data, error } = await supabase
       .from("inventory_items")
-      .update(body)
+      .update(allowed)
       .eq("id", id)
       .select()
       .single();

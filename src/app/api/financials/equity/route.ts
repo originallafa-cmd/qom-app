@@ -36,36 +36,13 @@ export async function POST(request: Request) {
 
     const supabase = await createServiceSupabase();
 
-    // Get current running total
-    const { data: latest } = await supabase
-      .from("equity_ledger")
-      .select("running_total")
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-
-    const prevTotal = latest?.running_total ?? 0;
-    let newTotal = prevTotal;
-
-    if (type === "personal_from_biz") {
-      newTotal = prevTotal + amount; // Mohamed takes from biz — owes more
-    } else if (type === "personal_into_biz") {
-      newTotal = prevTotal - amount; // Mohamed puts back — owes less
-    } else {
-      newTotal = amount; // adjustment — set directly
-    }
-
-    const { data, error } = await supabase
-      .from("equity_ledger")
-      .insert({
-        date: date || new Date().toISOString().split("T")[0],
-        type,
-        amount,
-        description: description || null,
-        running_total: newTotal,
-      })
-      .select()
-      .single();
+    // Use atomic DB function to prevent race conditions
+    const { data, error } = await supabase.rpc("add_equity_entry", {
+      p_date: date || new Date().toISOString().split("T")[0],
+      p_type: type,
+      p_amount: amount,
+      p_description: description || null,
+    }).single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);

@@ -14,6 +14,7 @@ function bar(ratio, len = 10) {
 }
 function dateStr(d) { return (d || new Date()).toISOString().split("T")[0]; }
 function monthStr(d) { return (d || new Date()).toISOString().slice(0, 7); }
+function monthEnd(m) { const [y,mo] = m.split("-").map(Number); return `${m}-${String(new Date(y,mo,0).getDate()).padStart(2,"0")}`; }
 function dayName(d) { return new Date(d).toLocaleDateString("en", { weekday: "short" }); }
 
 async function send(chatId, text, keyboard) {
@@ -174,7 +175,7 @@ async function handleSalesWeek(chatId) {
 
 async function handleSalesMonth(chatId) {
   const month = monthStr();
-  const { data } = await supabase.from("daily_sales").select("*").gte("date", month + "-01").lte("date", month + "-31").order("date");
+  const { data } = await supabase.from("daily_sales").select("*").gte("date", month + "-01").lte("date", monthEnd(month)).order("date");
   const sales = data || [];
 
   if (sales.length === 0) {
@@ -225,8 +226,8 @@ async function handleCompare(chatId) {
   const lastMonth = monthStr(lastDate);
 
   const [thisRes, lastRes] = await Promise.all([
-    supabase.from("daily_sales").select("*").gte("date", thisMonth + "-01").lte("date", thisMonth + "-31"),
-    supabase.from("daily_sales").select("*").gte("date", lastMonth + "-01").lte("date", lastMonth + "-31"),
+    supabase.from("daily_sales").select("*").gte("date", thisMonth + "-01").lte("date", monthEnd(thisMonth)),
+    supabase.from("daily_sales").select("*").gte("date", lastMonth + "-01").lte("date", monthEnd(lastMonth)),
   ]);
 
   const thisSales = thisRes.data || [];
@@ -366,7 +367,7 @@ async function handleEquity(chatId) {
 
 async function handlePnL(chatId) {
   const month = monthStr();
-  const { data } = await supabase.from("daily_sales").select("cash, card, talabat, total, expenses").gte("date", month + "-01").lte("date", month + "-31");
+  const { data } = await supabase.from("daily_sales").select("cash, card, talabat, total, expenses").gte("date", month + "-01").lte("date", monthEnd(month));
   const sales = data || [];
 
   const grossCash = sales.reduce((s, r) => s + (r.cash || 0), 0);

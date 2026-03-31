@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
+import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 
 // Auto-generate daily report when called (can be triggered by cron or after staff submission)
 export async function POST() {
   try {
+    const auth = await requireStaffOrAdmin();
+    if (!auth.authorized) return unauthorizedResponse();
     const supabase = await createServiceSupabase();
     const today = new Date().toISOString().split("T")[0];
     const currentMonth = today.slice(0, 7);

@@ -80,9 +80,15 @@ export default function AdminInventory() {
     fetchItems();
   }, [fetchItems]);
 
+  const [feedback, setFeedback] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  function showFeedback(type: "success" | "error", msg: string) {
+    setFeedback({ type, msg });
+    setTimeout(() => setFeedback(null), 3000);
+  }
+
   async function addItem() {
     if (!newName) return;
-    await fetch("/api/inventory", {
+    const res = await fetch("/api/inventory", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -98,6 +104,7 @@ export default function AdminInventory() {
         priority: newPriority,
       }),
     });
+    if (res.ok) { showFeedback("success", `${newName} added`); } else { showFeedback("error", "Failed to add"); }
     setShowAdd(false);
     resetAddForm();
     fetchItems();
@@ -116,17 +123,20 @@ export default function AdminInventory() {
   }
 
   async function updateItem(id: string, updates: Partial<InventoryItem>) {
-    await fetch(`/api/inventory/${id}`, {
+    const res = await fetch(`/api/inventory/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
     });
+    if (res.ok) { showFeedback("success", "Updated"); } else { showFeedback("error", "Update failed"); }
     setEditingId(null);
     fetchItems();
   }
 
   async function deleteItem(id: string) {
-    await fetch(`/api/inventory/${id}`, { method: "DELETE" });
+    if (!confirm("Are you sure you want to delete this item? This cannot be undone.")) return;
+    const res = await fetch(`/api/inventory/${id}`, { method: "DELETE" });
+    if (res.ok) { showFeedback("success", "Deleted"); } else { showFeedback("error", "Delete failed"); }
     fetchItems();
   }
 
@@ -185,6 +195,13 @@ export default function AdminInventory() {
           </button>
         ))}
       </div>
+
+      {/* Feedback */}
+      {feedback && (
+        <div className={`rounded-lg px-4 py-2 text-sm font-medium ${feedback.type === "success" ? "bg-success/10 text-success border border-success/20" : "bg-danger/10 text-danger border border-danger/20"}`}>
+          {feedback.msg}
+        </div>
+      )}
 
       {/* Search */}
       <input

@@ -9,7 +9,8 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month") || new Date().toISOString().slice(0, 7);
     const monthStart = month + "-01";
-    const monthEnd = month + "-31";
+    const [y, m] = month.split("-").map(Number);
+    const monthEnd = `${month}-${String(new Date(y, m, 0).getDate()).padStart(2, "0")}`;
 
     const supabase = await createServiceSupabase();
 
@@ -35,9 +36,10 @@ export async function GET(request: Request) {
     const grossTotal = grossCash + grossCard + grossTalabat;
 
     // Actual revenue after fees
-    const actualCash = grossCash; // 100%
-    const actualCard = grossCard * 0.9774; // 97.74%
-    const actualTalabat = grossTalabat * 0.717; // 71.7%
+    // Fee rates from centralized config
+    const actualCash = grossCash;
+    const actualCard = grossCard * (1 - 0.0226);
+    const actualTalabat = grossTalabat * (1 - 0.283);
     const actualTotal = actualCash + actualCard + actualTalabat;
 
     // Fees lost
