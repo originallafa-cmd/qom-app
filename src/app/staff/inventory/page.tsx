@@ -13,14 +13,12 @@ interface InventoryItem {
   unit: string;
   reorder_at: number;
   status: "ok" | "low" | "out";
-  priority: string;
-  notes: string | null;
 }
 
 const TABS: { value: InventoryType; en: string; fil: string }[] = [
   { value: "grocery", en: "Grocery", fil: "Grocery" },
   { value: "packaging", en: "Packaging", fil: "Packaging" },
-  { value: "kitchen", en: "Kitchen / Frozen", fil: "Kitchen / Frozen" },
+  { value: "kitchen", en: "Kitchen", fil: "Kitchen" },
 ];
 
 export default function StaffInventory() {
@@ -31,36 +29,13 @@ export default function StaffInventory() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [editQty, setEditQty] = useState<Record<string, string>>({});
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const [showOnly, setShowOnly] = useState<"all" | "alert">("all");
+  const [successId, setSuccessId] = useState<string | null>(null);
 
-  const t = {
-    en: {
-      title: "Inventory Count",
-      search: "Search items...",
-      qty: "Qty",
-      update: "Update",
-      unit: "Unit",
-      reorder: "Reorder at",
-      out: "OUT",
-      low: "LOW",
-      ok: "OK",
-      noItems: "No items found",
-      updated: "Updated!",
-    },
-    fil: {
-      title: "Bilang ng Imbentaryo",
-      search: "Hanapin...",
-      qty: "Dami",
-      update: "I-update",
-      unit: "Yunit",
-      reorder: "Mag-order sa",
-      out: "UBOS",
-      low: "MABABA",
-      ok: "OK",
-      noItems: "Walang nakita",
-      updated: "Na-update!",
-    },
-  };
-  const tx = t[lang];
+  const t = lang === "en"
+    ? { title: "Inventory", search: "Search...", update: "Save", noItems: "No items", alerts: "Alerts", all: "All", updated: "Saved!", items: "items" }
+    : { title: "Imbentaryo", search: "Hanapin...", update: "I-save", noItems: "Wala", alerts: "Alerto", all: "Lahat", updated: "Na-save!", items: "bagay" };
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
@@ -70,21 +45,15 @@ export default function StaffInventory() {
       const res = await fetch(`/api/inventory?${params}`);
       const data = await res.json();
       setItems(Array.isArray(data) ? data : []);
-    } catch {
-      setItems([]);
-    } finally {
-      setLoading(false);
-    }
+    } catch { setItems([]); }
+    setLoading(false);
   }, [tab, search]);
 
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+  useEffect(() => { fetchItems(); }, [fetchItems]);
 
   async function updateCount(item: InventoryItem) {
     const newQty = parseFloat(editQty[item.id] || "");
     if (isNaN(newQty) || newQty < 0) return;
-
     setUpdating(item.id);
     try {
       await fetch("/api/inventory/count", {
@@ -93,31 +62,40 @@ export default function StaffInventory() {
         body: JSON.stringify({ item_id: item.id, qty: newQty }),
       });
       setEditQty((prev) => ({ ...prev, [item.id]: "" }));
+      setSuccessId(item.id);
+      setTimeout(() => setSuccessId(null), 1500);
       fetchItems();
-    } catch {
-      // silently fail
-    } finally {
-      setUpdating(null);
-    }
+    } catch { /* */ }
+    setUpdating(null);
   }
 
-  const statusColor = (s: string) => {
-    if (s === "out") return "bg-danger/10 text-danger border-danger/30";
-    if (s === "low") return "bg-warning/10 text-warning border-warning/30";
-    return "bg-success/10 text-success border-success/30";
-  };
+  // Filter & group
+  const filtered = showOnly === "alert"
+    ? items.filter((i) => i.status === "out" || i.status === "low")
+    : items;
 
-  const statusLabel = (s: string) => {
-    if (s === "out") return tx.out;
-    if (s === "low") return tx.low;
-    return tx.ok;
-  };
+  const grouped: Record<string, InventoryItem[]> = {};
+  filtered.forEach((i) => {
+    const cat = i.category || "Other";
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(i);
+  });
+
+  const alertCount = items.filter((i) => i.status === "out" || i.status === "low").length;
+
+  function toggleCategory(cat: string) {
+    setCollapsed((prev) => ({ ...prev, [cat]: !prev[cat] }));
+  }
+
+  const statusDot = (s: string) =>
+    s === "out" ? "bg-danger" : s === "low" ? "bg-warning" : "bg-success";
 
   return (
-    <div className="space-y-4 pb-8">
+    <div className="space-y-3 pb-8">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-staff-text font-[family-name:var(--font-cairo)]">
-          {tx.title}
+          {t.title}
         </h2>
         <button
           onClick={() => setLang(lang === "en" ? "fil" : "en")}
@@ -129,100 +107,134 @@ export default function StaffInventory() {
 
       {/* Tabs */}
       <div className="flex bg-staff-card rounded-lg border border-staff-border overflow-hidden">
-        {TABS.map((t) => (
+        {TABS.map((tb) => (
           <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`flex-1 px-3 py-2 text-sm font-medium ${
-              tab === t.value
-                ? "bg-teal text-white"
-                : "text-staff-text2 hover:bg-staff-bg"
+            key={tb.value}
+            onClick={() => { setTab(tb.value); setSearch(""); setShowOnly("all"); }}
+            className={`flex-1 px-2 py-2 text-sm font-medium ${
+              tab === tb.value ? "bg-teal text-white" : "text-staff-text2"
             }`}
           >
-            {lang === "en" ? t.en : t.fil}
+            {lang === "en" ? tb.en : tb.fil}
           </button>
         ))}
       </div>
 
-      {/* Search */}
-      <input
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder={tx.search}
-        className="w-full px-3 py-2 rounded-lg border border-staff-border bg-staff-card text-staff-text text-sm"
-      />
+      {/* Search + Filter row */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t.search}
+          className="flex-1 px-3 py-2 rounded-lg border border-staff-border bg-staff-card text-staff-text text-sm"
+        />
+        <button
+          onClick={() => setShowOnly(showOnly === "all" ? "alert" : "all")}
+          className={`px-3 py-2 rounded-lg text-sm font-medium border whitespace-nowrap ${
+            showOnly === "alert"
+              ? "bg-danger/10 text-danger border-danger/30"
+              : "bg-staff-card text-staff-text2 border-staff-border"
+          }`}
+        >
+          {showOnly === "alert" ? `${t.alerts} (${alertCount})` : alertCount > 0 ? `⚠️ ${alertCount}` : t.all}
+        </button>
+      </div>
 
-      {/* Items List */}
+      {/* Summary bar */}
+      <div className="flex gap-3 text-xs text-staff-text2">
+        <span>{filtered.length} {t.items}</span>
+        <span className="text-danger">{items.filter(i => i.status === "out").length} out</span>
+        <span className="text-warning">{items.filter(i => i.status === "low").length} low</span>
+        <span className="text-success">{items.filter(i => i.status === "ok").length} ok</span>
+      </div>
+
+      {/* Items grouped by category */}
       {loading ? (
         <p className="text-center text-staff-text2 py-8">Loading...</p>
-      ) : items.length === 0 ? (
-        <p className="text-center text-staff-text2 py-8">{tx.noItems}</p>
+      ) : Object.keys(grouped).length === 0 ? (
+        <p className="text-center text-staff-text2 py-8">{t.noItems}</p>
       ) : (
-        <div className="space-y-2">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className="bg-staff-card rounded-xl border border-staff-border p-3"
-            >
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-staff-text text-sm">
-                      {item.name}
-                    </span>
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${statusColor(
-                        item.status
-                      )}`}
-                    >
-                      {statusLabel(item.status)}
-                    </span>
-                  </div>
-                  {item.category && (
-                    <span className="text-xs text-staff-text2">{item.category}</span>
-                  )}
+        Object.entries(grouped).map(([cat, catItems]) => {
+          const isCollapsed = collapsed[cat];
+          const catAlerts = catItems.filter((i) => i.status !== "ok").length;
+
+          return (
+            <div key={cat}>
+              {/* Category header — tap to collapse */}
+              <button
+                onClick={() => toggleCategory(cat)}
+                className="w-full flex items-center justify-between py-2 px-1 text-left"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-staff-text2">{isCollapsed ? "▶" : "▼"}</span>
+                  <span className="text-sm font-semibold text-staff-text">{cat}</span>
+                  <span className="text-xs text-staff-text2">({catItems.length})</span>
                 </div>
-                <div className="text-right">
-                  <span className="text-lg font-bold text-staff-text">
-                    {item.qty}
+                {catAlerts > 0 && (
+                  <span className="text-xs bg-danger/10 text-danger px-1.5 py-0.5 rounded">
+                    {catAlerts} alert{catAlerts > 1 ? "s" : ""}
                   </span>
-                  <span className="text-xs text-staff-text2 ml-1">{item.unit}</span>
+                )}
+              </button>
+
+              {/* Items — compact rows */}
+              {!isCollapsed && (
+                <div className="bg-staff-card rounded-xl border border-staff-border overflow-hidden mb-2">
+                  {catItems.map((item, idx) => (
+                    <div
+                      key={item.id}
+                      className={`flex items-center gap-2 px-3 py-2 ${
+                        idx < catItems.length - 1 ? "border-b border-staff-border/50" : ""
+                      } ${successId === item.id ? "bg-success/5" : ""}`}
+                    >
+                      {/* Status dot */}
+                      <div className={`w-2 h-2 rounded-full flex-shrink-0 ${statusDot(item.status)}`} />
+
+                      {/* Name + current qty */}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-staff-text truncate block">{item.name}</span>
+                      </div>
+
+                      {/* Current qty */}
+                      <span className={`text-sm font-bold min-w-8 text-right ${
+                        item.status === "out" ? "text-danger" : item.status === "low" ? "text-warning" : "text-staff-text"
+                      }`}>
+                        {item.qty}
+                      </span>
+                      <span className="text-[10px] text-staff-text2 w-6">{item.unit}</span>
+
+                      {/* Quick update */}
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        inputMode="decimal"
+                        value={editQty[item.id] || ""}
+                        onChange={(e) =>
+                          setEditQty((prev) => ({ ...prev, [item.id]: e.target.value }))
+                        }
+                        placeholder="—"
+                        className="w-14 px-1.5 py-1 rounded border border-staff-border bg-staff-bg text-staff-text text-sm text-center"
+                      />
+                      <button
+                        onClick={() => updateCount(item)}
+                        disabled={!editQty[item.id] || updating === item.id}
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          successId === item.id
+                            ? "bg-success/20 text-success"
+                            : "bg-teal text-white disabled:opacity-30"
+                        }`}
+                      >
+                        {successId === item.id ? "✓" : updating === item.id ? "..." : t.update}
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              </div>
-
-              {/* Update Row */}
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={editQty[item.id] || ""}
-                  onChange={(e) =>
-                    setEditQty((prev) => ({ ...prev, [item.id]: e.target.value }))
-                  }
-                  placeholder={`New ${tx.qty}`}
-                  className="flex-1 px-2 py-1.5 rounded-lg border border-staff-border bg-staff-bg text-staff-text text-sm"
-                />
-                <button
-                  onClick={() => updateCount(item)}
-                  disabled={!editQty[item.id] || updating === item.id}
-                  className="px-3 py-1.5 rounded-lg bg-teal text-white text-sm font-medium disabled:opacity-40"
-                >
-                  {updating === item.id ? "..." : tx.update}
-                </button>
-              </div>
-
-              {/* Reorder info */}
-              <div className="flex justify-between mt-1 text-[10px] text-staff-text2">
-                <span>
-                  {tx.reorder}: {item.reorder_at} {item.unit}
-                </span>
-                {item.notes && <span>{item.notes}</span>}
-              </div>
+              )}
             </div>
-          ))}
-        </div>
+          );
+        })
       )}
     </div>
   );
