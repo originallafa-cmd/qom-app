@@ -8,6 +8,8 @@ export default function AdminSettings() {
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [pinForm, setPinForm] = useState({ staffName: "", newPin: "" });
   const [pinMsg, setPinMsg] = useState("");
+  const [broadcastMsg, setBroadcastMsg] = useState("");
+  const [broadcastSent, setBroadcastSent] = useState(false);
   const [pinMsgType, setPinMsgType] = useState<"success" | "error">("success");
   const [staffList, setStaffList] = useState<{ id: string; name: string; role: string }[]>([]);
 
@@ -82,6 +84,37 @@ export default function AdminSettings() {
             {syncResult}
           </p>
         )}
+      </div>
+
+      {/* Broadcast Message */}
+      <div className="bg-admin-card rounded-xl border border-admin-border p-5">
+        <h3 className="text-sm font-semibold text-admin-text2 mb-2">Message to Staff</h3>
+        <p className="text-xs text-admin-text3 mb-3">Send a notification that all staff will see on their dashboard</p>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={broadcastMsg}
+            onChange={(e) => { setBroadcastMsg(e.target.value); setBroadcastSent(false); }}
+            placeholder="e.g. Deep clean Friday after closing"
+            className="flex-1 px-3 py-2 rounded-lg bg-admin-bg border border-admin-border text-admin-text text-sm"
+          />
+          <button
+            onClick={async () => {
+              if (!broadcastMsg.trim()) return;
+              const res = await fetch("/api/admin/broadcast", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: broadcastMsg }),
+              });
+              if (res.ok) { setBroadcastSent(true); setBroadcastMsg(""); }
+            }}
+            disabled={!broadcastMsg.trim()}
+            className="px-4 py-2 bg-gold text-white rounded-lg text-sm font-medium disabled:opacity-40"
+          >
+            Send
+          </button>
+        </div>
+        {broadcastSent && <p className="text-sm mt-2 text-success">Message sent to all staff!</p>}
       </div>
 
       {/* Staff PIN Management */}

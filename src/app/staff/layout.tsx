@@ -54,9 +54,9 @@ export default function StaffLayout({
       {/* Top Bar */}
       <header className="bg-staff-card border-b border-staff-border px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
-          <h1 className="text-lg font-bold text-teal font-[family-name:var(--font-cairo)]">
+          <a href="/" className="text-lg font-bold text-teal font-[family-name:var(--font-cairo)] hover:opacity-80">
             QoM
-          </h1>
+          </a>
           {staffName && (
             <span className="text-xs bg-teal/10 text-teal px-2 py-0.5 rounded-full font-medium">
               {staffName}

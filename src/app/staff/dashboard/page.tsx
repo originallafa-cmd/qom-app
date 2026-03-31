@@ -27,12 +27,13 @@ export default function StaffDashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [sessionRes, salesRes, alertsRes, prodRes, remindersRes] = await Promise.all([
+        const [sessionRes, salesRes, alertsRes, prodRes, remindersRes, notifRes] = await Promise.all([
           fetch("/api/auth/staff/session"),
           fetch("/api/sales/recent"),
           fetch("/api/inventory/alerts"),
           fetch(`/api/production?from=${new Date().toISOString().split("T")[0]}&to=${new Date().toISOString().split("T")[0]}`),
           fetch("/api/inventory/reminders"),
+          fetch("/api/notifications"),
         ]);
 
         const session = await sessionRes.json();
@@ -40,6 +41,10 @@ export default function StaffDashboard() {
         const alerts = await alertsRes.json();
         const production = await prodRes.json();
         const remindersData = await remindersRes.json();
+        const notifData = await notifRes.json();
+        const broadcasts = (notifData?.notifications || [])
+          .filter((n: { type: string; read: boolean; data?: { broadcast?: boolean } }) => n.type === "system" && n.data?.broadcast && !n.read)
+          .map((n: { message: string }) => ({ type: "broadcast", severity: "info", message: `📢 ${n.message}` }));
 
         const today = Array.isArray(sales) ? sales.find((s: { date: string }) => s.date === new Date().toISOString().split("T")[0]) : null;
         const alertItems = Array.isArray(alerts) ? alerts : [];
@@ -53,7 +58,10 @@ export default function StaffDashboard() {
             low: alertItems.filter((a: { status: string }) => a.status === "low").length,
           },
           todayProduction: Array.isArray(production) ? production.length : 0,
-          reminders: Array.isArray(remindersData?.reminders) ? remindersData.reminders.slice(0, 5) : [],
+          reminders: [
+            ...broadcasts,
+            ...(Array.isArray(remindersData?.reminders) ? remindersData.reminders.slice(0, 5) : []),
+          ],
         });
       } catch { /* */ }
       setLoading(false);
