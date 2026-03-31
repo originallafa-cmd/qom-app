@@ -3,127 +3,232 @@ import { createServiceSupabase } from "@/lib/supabase/server";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { requireAdmin, unauthorizedResponse } from "@/lib/api-auth";
+import { APP_VERSION } from "@/lib/version";
 
-const VAULT_PATH = "D:\\vault";
+const VAULT = "D:\\vault";
+const BRAIN = "D:\\vault\\01 - Queen of Mahshi\\Brain";
+const DAILY = "D:\\vault\\01 - Queen of Mahshi\\Daily";
 
-export async function POST() {
+function aed(n: number) { return (n || 0).toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+export async function POST(request: Request) {
   try {
     const auth = await requireAdmin();
     if (!auth.authorized) return unauthorizedResponse();
+
+    const body = await request.json().catch(() => ({}));
+    const mode = (body as Record<string, string>).mode || "full"; // full | live | daily | ai-log
+
     const supabase = await createServiceSupabase();
     const today = new Date().toISOString().split("T")[0];
     const currentMonth = today.slice(0, 7);
+    const files: string[] = [];
 
-    // Fetch all data
-    const [salesRes, inventoryRes, equityRes, bankRes, settingsRes, alertsRes] = await Promise.all([
-      supabase.from("daily_sales").select("*").order("date", { ascending: false }).limit(90),
-      supabase.from("inventory_items").select("*").order("type, name"),
-      supabase.from("equity_ledger").select("*").order("created_at", { ascending: false }),
-      supabase.from("bank_transactions").select("*").order("date", { ascending: false }).limit(50),
-      supabase.from("settings").select("*"),
-      supabase.from("inventory_items").select("name, type, qty, status").in("status", ["out", "low"]),
-    ]);
+    await mkdir(BRAIN, { recursive: true });
+    await mkdir(DAILY, { recursive: true });
+    await mkdir(VAULT, { recursive: true });
 
-    const sales = salesRes.data || [];
-    const inventory = inventoryRes.data || [];
-    const equity = equityRes.data || [];
-    const bank = bankRes.data || [];
-    const alerts = alertsRes.data || [];
+    // ─── LIVE STATE (always updated) ─────────────────
+    if (mode === "full" || mode === "live") {
+      const [salesRes, invRes, equityRes, bankRes, alertsRes, recentRes] = await Promise.all([
+        supabase.from("daily_sales").select("*").order("date", { ascending: false }).limit(7),
+        supabase.from("inventory_items").select("name, type, qty, unit, status").order("type, name"),
+        supabase.from("equity_ledger").select("running_total, date").order("created_at", { ascending: false }).limit(1).single(),
+        supabase.from("bank_transactions").select("balance, date").order("date", { ascending: false }).limit(1).single(),
+        supabase.from("inventory_items").select("name, type, qty, status").in("status", ["out", "low"]),
+        supabase.from("audit_log").select("action, table_name, created_at, staff:user_id(name)").order("created_at", { ascending: false }).limit(10),
+      ]);
 
-    // Calculate month stats
-    const monthSales = sales.filter((s) => s.date.startsWith(currentMonth));
-    const monthRevenue = monthSales.reduce((s, r) => s + (r.total || 0), 0);
-    const monthDays = monthSales.length;
-    const avgDaily = monthDays > 0 ? monthRevenue / monthDays : 0;
+      const sales = salesRes.data || [];
+      const alerts = alertsRes.data || [];
+      const outItems = alerts.filter(a => a.status === "out");
+      const lowItems = alerts.filter(a => a.status === "low");
+      const todaySales = sales.find(s => s.date === today);
+      const monthSales = sales.filter(s => s.date.startsWith(currentMonth));
+      const monthTotal = monthSales.reduce((s, r) => s + (r.total || 0), 0);
 
-    const adcbBalance = bank[0]?.balance ?? 0;
-    const equityBalance = equity[0]?.running_total ?? 0;
-
-    // Generate session memo
-    const memo = `# QoM SESSION MEMO — Updated ${today}
-## For: Next Claude instance. Read this FIRST.
-
+      const liveState = `---
+updated: ${new Date().toISOString()}
+version: ${APP_VERSION}
 ---
 
-## WHO
-- **Mohamed** — co-owner Queen of Mahshi (ملكة المحشي), Bani Yas West, Abu Dhabi
-- **Ahmed** — 50/50 partner | Business: ORIGINAL LAFA CAFETERIA LLC SPC
-- Staff: Cisene (head), Rose Catherine, Malimie, Mae Ann, Reyana
+# QoM Live State
+> Auto-generated. Read this FIRST in every Claude session.
 
-## CURRENT STATUS
+## Today (${today})
+${todaySales
+  ? `- Total: **${aed(todaySales.total)}** | Cash ${aed(todaySales.cash)} | Card ${aed(todaySales.card)} | Talabat ${aed(todaySales.talabat)}
+- Expenses: ${aed(todaySales.expenses)} | Net: **${aed(todaySales.net)}**`
+  : "- No sales entry yet"}
 
-### EQUITY: ${equityBalance === 0 ? "ZERO ✅" : formatNum(equityBalance)} — Reset Mar 28, 2026
-${equity.slice(0, 5).map((e) => `- ${e.date}: ${e.type} ${formatNum(e.amount)} → running: ${formatNum(e.running_total)}`).join("\n")}
+## Month (${currentMonth})
+- Total: **${aed(monthTotal)}** | Days: ${monthSales.length} | Avg: ${aed(monthSales.length > 0 ? monthTotal / monthSales.length : 0)}/day
 
-### ADCB: ${formatNum(adcbBalance)}
-${bank.slice(0, 5).map((t) => `- ${t.date}: ${t.description} | D:${formatNum(t.debit)} C:${formatNum(t.credit)} | Bal:${formatNum(t.balance)}`).join("\n")}
+## Last 7 Days
+${sales.map(s => `| ${s.date} | ${aed(s.total)} | Cash ${s.cash.toFixed(0)} Card ${s.card.toFixed(0)} Tal ${s.talabat.toFixed(0)} |`).join("\n")}
 
-### ${currentMonth.toUpperCase()} SALES (${monthDays} days)
-\`\`\`
-TOTAL: ${formatNum(monthRevenue)} | Avg: ${formatNum(avgDaily)}/day
-${monthSales.slice(0, 10).map((s) => `${s.date}: ${formatNum(s.total)}`).join(" | ")}
-\`\`\`
+## Financial
+- ADCB Balance: **${aed(bankRes.data?.balance ?? 0)}** (${bankRes.data?.date || "N/A"})
+- Equity: **${aed(equityRes.data?.running_total ?? 0)}** | Ahmed's 50%: ${aed((equityRes.data?.running_total ?? 0) * 0.5)}
 
-### INVENTORY ALERTS
-${alerts.length === 0 ? "✅ All items stocked" : alerts.map((a) => `- **${a.status === "out" ? "🔴 OUT" : "🟡 LOW"}:** ${a.name} (${a.type}) — ${a.qty} left`).join("\n")}
+## Inventory Alerts
+${outItems.length === 0 && lowItems.length === 0 ? "✅ All stocked" : ""}
+${outItems.length > 0 ? `🔴 **OUT (${outItems.length}):** ${outItems.map(i => i.name).join(", ")}` : ""}
+${lowItems.length > 0 ? `🟡 **LOW (${lowItems.length}):** ${lowItems.map(i => `${i.name}(${i.qty})`).join(", ")}` : ""}
 
----
+## Inventory Summary
+- Grocery: ${(invRes.data || []).filter(i => i.type === "grocery").length} items
+- Packaging: ${(invRes.data || []).filter(i => i.type === "packaging").length} items
+- Kitchen: ${(invRes.data || []).filter(i => i.type === "kitchen").length} items
 
-## CRITICAL REMINDERS
-1. **EQUITY = ${equityBalance === 0 ? "ZERO" : formatNum(equityBalance)}.** Reset Mar 28.
-2. **ADCB: ${formatNum(adcbBalance)}**
-3. **App running at:** qom-app.vercel.app (or localhost:3000)
-4. **MCP endpoint:** /api/mcp
+## Recent Activity
+${(recentRes.data || []).slice(0, 5).map(a => {
+  const staff = (a.staff as unknown as { name: string })?.name || "System";
+  const time = new Date(a.created_at).toLocaleString("en-GB", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  return `- ${time} | ${staff} | ${a.action} ${a.table_name}`;
+}).join("\n")}
 `;
 
-    // Write files
-    await mkdir(VAULT_PATH, { recursive: true });
-    await writeFile(join(VAULT_PATH, `QoM_SESSION_MEMO_${today}.md`), memo, "utf-8");
+      await writeFile(join(BRAIN, "QoM_Live_State.md"), liveState, "utf-8");
+      files.push("Brain/QoM_Live_State.md");
+    }
 
-    // Sales JSON
-    await writeFile(
-      join(VAULT_PATH, `QoM_Sales_${currentMonth}.json`),
-      JSON.stringify({ month: currentMonth, days: monthDays, sales: monthSales }, null, 2),
-      "utf-8"
-    );
+    // ─── DAILY FILE ──────────────────────────────────
+    if (mode === "full" || mode === "daily") {
+      const { data: todayData } = await supabase.from("daily_sales").select("*").eq("date", today).single();
+      const { data: todayExpenses } = await supabase.from("expense_items").select("*").eq("daily_sales_id", todayData?.id || "none");
+      const { data: todayProduction } = await supabase.from("production_log").select("*").eq("date", today);
+      const { data: todayActivity } = await supabase.from("audit_log")
+        .select("action, table_name, created_at, new_data, staff:user_id(name)")
+        .gte("created_at", today + "T00:00:00")
+        .order("created_at", { ascending: false });
 
-    // Inventory JSON
-    await writeFile(
-      join(VAULT_PATH, `QoM_Inventory_${today}.json`),
-      JSON.stringify({ date: today, items: inventory, alerts }, null, 2),
-      "utf-8"
-    );
+      const daily = `---
+date: ${today}
+type: daily-summary
+---
 
-    // Full export
-    await writeFile(
-      join(VAULT_PATH, `QoM_Full_Export_${today}.json`),
-      JSON.stringify({
+# ${today} — Daily Summary
+
+## Sales
+${todayData
+  ? `| Channel | Amount |
+|---------|--------|
+| Cash | ${aed(todayData.cash)} |
+| Card | ${aed(todayData.card)} |
+| Talabat | ${aed(todayData.talabat)} |
+| **Total** | **${aed(todayData.total)}** |
+| Expenses | -${aed(todayData.expenses)} |
+| **Net** | **${aed(todayData.net)}** |`
+  : "No sales entered yet."}
+
+## Expenses
+${(todayExpenses || []).length > 0
+  ? (todayExpenses || []).map(e => `- ${e.description}: ${aed(e.amount)} (${e.category})`).join("\n")
+  : "None logged."}
+
+## Production
+${(todayProduction || []).length > 0
+  ? (todayProduction || []).map(p => `- ${p.item}: ${p.quantity} ${p.unit}`).join("\n")
+  : "None logged."}
+
+## Activity Log
+${(todayActivity || []).map(a => {
+  const staff = (a.staff as unknown as { name: string })?.name || "System";
+  const time = new Date(a.created_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  return `- ${time} ${staff}: ${a.action} ${a.table_name}`;
+}).join("\n") || "No activity."}
+`;
+
+      await writeFile(join(DAILY, `${today}.md`), daily, "utf-8");
+      files.push(`Daily/${today}.md`);
+    }
+
+    // ─── AI MEMORY (persistent learning) ─────────────
+    if (mode === "full") {
+      // Read existing memory or create new
+      let existingMemory = "";
+      try {
+        const { readFile } = await import("fs/promises");
+        existingMemory = await readFile(join(BRAIN, "QoM_AI_Memory.md"), "utf-8");
+      } catch {
+        existingMemory = `---
+created: ${today}
+type: ai-memory
+---
+
+# QoM AI Memory
+> Claude's persistent learning. Updated over time.
+
+## Learned Patterns
+(None yet — will accumulate as AI processes data)
+
+## Recipe Map
+(Not yet configured — staff will teach by uploading recipe photos)
+
+## Usage Adjustments
+(None yet — will learn from actual vs expected inventory depletion)
+
+## Staff Notes
+(Observations about staff habits, common issues, etc.)
+`;
+      }
+
+      await writeFile(join(BRAIN, "QoM_AI_Memory.md"), existingMemory, "utf-8");
+      files.push("Brain/QoM_AI_Memory.md");
+    }
+
+    // ─── AI LOG (recent interactions) ────────────────
+    if (mode === "full" || mode === "ai-log") {
+      let existingLog = "";
+      try {
+        const { readFile } = await import("fs/promises");
+        existingLog = await readFile(join(BRAIN, "QoM_AI_Log.md"), "utf-8");
+      } catch {
+        existingLog = `---
+type: ai-log
+---
+
+# QoM AI Interaction Log
+> Recent AI processing events. Newest first.
+
+`;
+      }
+
+      await writeFile(join(BRAIN, "QoM_AI_Log.md"), existingLog, "utf-8");
+      files.push("Brain/QoM_AI_Log.md");
+    }
+
+    // ─── FULL EXPORT (JSON backups) ──────────────────
+    if (mode === "full") {
+      const [salesRes, invRes, equityRes, bankRes] = await Promise.all([
+        supabase.from("daily_sales").select("*").order("date", { ascending: false }).limit(90),
+        supabase.from("inventory_items").select("*").order("type, name"),
+        supabase.from("equity_ledger").select("*").order("created_at", { ascending: false }),
+        supabase.from("bank_transactions").select("*").order("date", { ascending: false }).limit(50),
+      ]);
+
+      await writeFile(join(VAULT, `QoM_Full_Export_${today}.json`), JSON.stringify({
         exported_at: new Date().toISOString(),
-        sales: sales.slice(0, 90),
-        inventory,
-        equity,
-        bank: bank.slice(0, 50),
-        alerts,
-      }, null, 2),
-      "utf-8"
-    );
+        version: APP_VERSION,
+        sales: salesRes.data || [],
+        inventory: invRes.data || [],
+        equity: equityRes.data || [],
+        bank: bankRes.data || [],
+      }, null, 2), "utf-8");
+      files.push(`QoM_Full_Export_${today}.json`);
 
-    return NextResponse.json({
-      success: true,
-      files: [
-        `QoM_SESSION_MEMO_${today}.md`,
-        `QoM_Sales_${currentMonth}.json`,
-        `QoM_Inventory_${today}.json`,
-        `QoM_Full_Export_${today}.json`,
-      ],
-    });
+      // Session memo
+      await writeFile(join(VAULT, `QoM_SESSION_MEMO_${today}.md`),
+        `# QoM Session Memo — ${today}\nApp v${APP_VERSION}\nVault synced at ${new Date().toLocaleTimeString("en-GB")}\nFiles: ${files.join(", ")}\n`,
+        "utf-8"
+      );
+      files.push(`QoM_SESSION_MEMO_${today}.md`);
+    }
+
+    return NextResponse.json({ success: true, mode, files });
   } catch (err) {
     console.error("Vault sync error:", err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: "Vault sync failed" }, { status: 500 });
   }
-}
-
-function formatNum(n: number | null | undefined): string {
-  if (n === null || n === undefined) return "0";
-  return n.toLocaleString("en-AE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
