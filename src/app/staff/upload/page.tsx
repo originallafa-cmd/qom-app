@@ -32,6 +32,10 @@ export default function StaffUpload() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [caption, setCaption] = useState("");
+  const [showCamera, setShowCamera] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const t = lang === "en" ? {
     title: "Upload Document",
@@ -163,6 +167,52 @@ export default function StaffUpload() {
     if (file) handleUpload(file, caption || undefined);
   }
 
+  async function openCamera() {
+    setShowCamera(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment", width: { ideal: 1080 }, height: { ideal: 1920 } },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch {
+      setShowCamera(false);
+      // Fallback to file input if camera access denied
+      fileRef.current?.click();
+    }
+  }
+
+  function capturePhoto() {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(video, 0, 0);
+
+    canvas.toBlob((blob) => {
+      if (blob) {
+        const file = new File([blob], "photo.jpg", { type: "image/jpeg" });
+        closeCamera();
+        handleUpload(file, caption || undefined);
+      }
+    }, "image/jpeg", 0.9);
+  }
+
+  function closeCamera() {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    setShowCamera(false);
+  }
+
   const typeInfo = TYPE_LABELS[result?.type || "unknown"] || TYPE_LABELS.unknown;
 
   return (
@@ -198,18 +248,44 @@ export default function StaffUpload() {
           </div>
 
           <div className="space-y-3">
-            {/* Camera capture */}
-            <label className="block w-full py-4 rounded-xl bg-teal text-white font-semibold text-lg cursor-pointer hover:bg-teal-dark transition-colors">
+            {/* Camera button */}
+            <button onClick={openCamera}
+              className="block w-full py-4 rounded-xl bg-teal text-white font-semibold text-lg hover:bg-teal-dark transition-colors">
               {t.takePhoto}
-              <input type="file" accept="image/*" capture="environment" onChange={handleFileSelect}
-                className="hidden" ref={fileRef} />
-            </label>
+            </button>
 
             {/* File picker */}
-            <label className="block w-full py-4 rounded-xl bg-staff-bg border-2 border-dashed border-staff-border text-staff-text font-medium cursor-pointer hover:border-teal transition-colors">
+            <label className="block w-full py-4 rounded-xl bg-staff-bg border-2 border-dashed border-staff-border text-staff-text font-medium cursor-pointer hover:border-teal transition-colors text-center">
               {t.chooseFile}
-              <input type="file" accept="image/*,.pdf" onChange={handleFileSelect} className="hidden" />
+              <input type="file" accept="image/*,.pdf" onChange={handleFileSelect} className="hidden" ref={fileRef} />
             </label>
+          </div>
+
+          {/* Hidden canvas for photo capture */}
+          <canvas ref={canvasRef} className="hidden" />
+        </div>
+      )}
+
+      {/* CAMERA VIEWFINDER */}
+      {showCamera && (
+        <div className="fixed inset-0 bg-black z-50 flex flex-col">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="flex-1 object-cover"
+          />
+          <div className="absolute bottom-0 left-0 right-0 p-6 flex items-center justify-center gap-6 bg-gradient-to-t from-black/80 to-transparent">
+            <button onClick={closeCamera}
+              className="w-14 h-14 rounded-full bg-white/20 text-white text-xl flex items-center justify-center">
+              ✕
+            </button>
+            <button onClick={capturePhoto}
+              className="w-20 h-20 rounded-full border-4 border-white bg-white/30 flex items-center justify-center active:scale-90 transition-transform">
+              <div className="w-16 h-16 rounded-full bg-white" />
+            </button>
+            <div className="w-14 h-14" /> {/* spacer */}
           </div>
         </div>
       )}
