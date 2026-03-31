@@ -95,9 +95,17 @@ export default function StaffUpload() {
 
       setResult(data);
 
-      if (data.type === "unclear" || data.questions?.length > 0) {
+      // If data was extracted (has any fields), go to review even if there are questions
+      const hasData = data.data && Object.keys(data.data).length > 0;
+
+      if (data.type === "unclear" && !hasData) {
+        // Truly unreadable — ask to retake
+        setStep("answer");
+      } else if (!hasData && data.questions?.length > 0) {
+        // No data at all + has questions — need to ask
         setStep("answer");
       } else {
+        // Got data — show review (questions shown as notes, not blocking)
         setStep("review");
       }
     } catch {
