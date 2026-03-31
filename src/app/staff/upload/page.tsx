@@ -31,12 +31,15 @@ export default function StaffUpload() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [caption, setCaption] = useState("");
 
   const t = lang === "en" ? {
     title: "Upload Document",
     subtitle: "Take a photo or choose a file — AI will read it automatically",
     takePhoto: "Take Photo",
     chooseFile: "Choose File",
+    captionHint: "Add a note (optional)",
+    captionPlaceholder: "e.g. Z report, vegetable receipt, delivery from supplier...",
     processing: "AI is reading your photo...",
     detected: "Detected",
     confidence: "Confidence",
@@ -54,6 +57,8 @@ export default function StaffUpload() {
     subtitle: "Kumuha ng litrato o pumili ng file — babasahin ng AI",
     takePhoto: "Kumuha ng Litrato",
     chooseFile: "Pumili ng File",
+    captionHint: "Magdagdag ng tala (opsyonal)",
+    captionPlaceholder: "hal. Z report, resibo ng gulay, delivery mula sa supplier...",
     processing: "Binabasa ng AI ang litrato...",
     detected: "Nakita",
     confidence: "Kumpiyansa",
@@ -141,12 +146,13 @@ export default function StaffUpload() {
     setMessage("");
     setPreviewUrl(null);
     setSelectedFile(null);
+    setCaption("");
     if (fileRef.current) fileRef.current.value = "";
   }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) handleUpload(file);
+    if (file) handleUpload(file, caption || undefined);
   }
 
   const typeInfo = TYPE_LABELS[result?.type || "unknown"] || TYPE_LABELS.unknown;
@@ -169,7 +175,19 @@ export default function StaffUpload() {
           <div className="w-20 h-20 bg-teal/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-4xl">📸</span>
           </div>
-          <p className="text-sm text-staff-text2 mb-6">{t.subtitle}</p>
+          <p className="text-sm text-staff-text2 mb-4">{t.subtitle}</p>
+
+          {/* Caption / description */}
+          <div className="mb-4 text-left">
+            <label className="block text-xs text-staff-text2 mb-1">{t.captionHint}</label>
+            <input
+              type="text"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder={t.captionPlaceholder}
+              className="w-full px-4 py-2.5 rounded-xl border border-staff-border bg-staff-bg text-staff-text text-sm"
+            />
+          </div>
 
           <div className="space-y-3">
             {/* Camera capture */}
