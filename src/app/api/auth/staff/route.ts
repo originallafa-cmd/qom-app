@@ -13,21 +13,36 @@ export async function POST(request: Request) {
     const supabase = await createServiceSupabase();
     const { data: staffList, error } = await supabase
       .from("staff")
-      .select("id, name, pin_hash, role, active")
+      .select("id, name, pin_hash, role, active, must_change_pin")
       .eq("active", true)
-      .eq("role", "staff");
+      .in("role", ["staff", "manager"]);
 
     if (error || !staffList) {
       return NextResponse.json({ error: "Database error" }, { status: 500 });
     }
 
-    // Check PIN against all active staff
+    // Check PIN against all active staff + managers
     for (const staff of staffList) {
       if (!staff.pin_hash) continue;
       const match = await verifyStaffPin(pin, staff.pin_hash);
       if (match) {
         await setStaffSession(staff.id, staff.name);
-        return NextResponse.json({ success: true, name: staff.name });
+
+        // Log login
+        await supabase.from("audit_log").insert({
+          user_id: staff.id,
+          action: "login",
+          table_name: "staff",
+          record_id: staff.id,
+          new_data: { name: staff.name, role: staff.role },
+        });
+
+        return NextResponse.json({
+          success: true,
+          name: staff.name,
+          role: staff.role,
+          mustChangePin: staff.must_change_pin ?? false,
+        });
       }
     }
 

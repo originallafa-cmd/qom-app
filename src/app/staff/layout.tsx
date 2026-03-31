@@ -7,6 +7,7 @@ import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
 
 const navItems = [
+  { href: "/staff/dashboard", labelKey: "today" as const, icon: "🏠" },
   { href: "/staff/sales", labelKey: "dailySales" as const, icon: "💰" },
   { href: "/staff/inventory", labelKey: "inventory" as const, icon: "📦" },
   { href: "/staff/production", labelKey: "production" as const, icon: "🍳" },
