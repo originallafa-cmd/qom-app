@@ -8,13 +8,13 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "get_inventory",
-    description: "Get inventory items, optionally filtered by type or status",
+    description: "Get inventory items. Use search to find by name. IMPORTANT: if staff misspells, try the corrected spelling. Try partial matches too (e.g. 'ket' for ketchup, 'spr' for sprite). You can call this multiple times with different search terms.",
     input_schema: {
       type: "object" as const,
       properties: {
         type: { type: "string", enum: ["grocery", "packaging", "kitchen"] },
         status: { type: "string", enum: ["ok", "low", "out"] },
-        search: { type: "string", description: "Search by name" },
+        search: { type: "string", description: "Search by name — use corrected spelling if staff misspelled" },
       },
     },
   },
@@ -105,7 +105,17 @@ RULES:
 - If they ask about stock, check inventory
 - Confirm before making changes: "Update milk to 5? Yes/No"
 - Respond in the same language the staff uses (English, Arabic, or Filipino)
-- Use emojis for status: ✅ done, ⚠️ low, ❌ out`;
+- Use emojis for status: ✅ done, ⚠️ low, ❌ out
+
+CRITICAL — SPELLING & FUZZY MATCHING:
+- Staff are NOT native English speakers. They WILL misspell things.
+- "katchaub" = ketchup, "sprit" = sprite, "yougrt" = yoghurt, "bred" = bread, "pomagrante" = pomegranate, "macroni" = macaroni, "botled watar" = bottled water
+- ALWAYS try to match what they mean, not what they typed
+- When searching inventory, try multiple variations: the exact word, common misspellings, partial matches
+- If you find a close match, just use it — don't ask "did you mean?"
+- Only ask for clarification if there are 2+ possible matches and you genuinely can't tell which one
+- NEVER say "check the spelling" — figure it out yourself
+- Staff may use Arabic names for items too: حليب = milk, ماء = water, خبز = bread`;
 
     let messages: Anthropic.MessageParam[] = [{ role: "user", content: message }];
     let response = await anthropic.messages.create({
