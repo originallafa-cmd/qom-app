@@ -224,6 +224,21 @@ type: ai-log
         "utf-8"
       );
       files.push(`QoM_SESSION_MEMO_${today}.md`);
+
+      // Sync cloud notes to local vault
+      const { data: cloudNotes } = await supabase
+        .from("settings")
+        .select("key, value")
+        .like("key", "vault_note:%");
+
+      for (const note of (cloudNotes || [])) {
+        const notePath = note.key.replace("vault_note:", "");
+        const fullPath = join(VAULT, "notes", notePath);
+        const dir = fullPath.substring(0, fullPath.lastIndexOf("\\") > 0 ? fullPath.lastIndexOf("\\") : fullPath.lastIndexOf("/"));
+        await mkdir(dir, { recursive: true });
+        await writeFile(fullPath, JSON.parse(note.value), "utf-8");
+        files.push(`notes/${notePath}`);
+      }
     }
 
     return NextResponse.json({ success: true, mode, files });
