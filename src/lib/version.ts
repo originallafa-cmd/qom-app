@@ -7,3 +7,4 @@ export const APP_BUILD_DATE = "2026-03-31";
 // 1.2.0 — UX upgrades: staff tracking, activity log, mobile responsive, help page
 // 1.3.0 — Security audit fixes: RLS, signed sessions, rate limiting, auth on all APIs
 // 1.4.0 — Final audit: form labels, stable keys, next/font, N+1 fix, manager login, staff dashboard
+
