@@ -29,6 +29,7 @@ npm-debug.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-*.png
+# screenshots (not logo)
+admin-dashboard.png
 
 .vercel
