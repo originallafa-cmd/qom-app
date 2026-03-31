@@ -3,12 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
+interface Reminder {
+  type: string;
+  severity: string;
+  message: string;
+  item?: string;
+}
+
 interface DashboardData {
   staffName: string;
   role: string;
   today: { total: number; cash: number; card: number; talabat: number; expenses: number; net: number } | null;
   alerts: { out: number; low: number };
   todayProduction: number;
+  reminders: Reminder[];
 }
 
 export default function StaffDashboard() {
@@ -19,17 +27,19 @@ export default function StaffDashboard() {
   useEffect(() => {
     async function load() {
       try {
-        const [sessionRes, salesRes, alertsRes, prodRes] = await Promise.all([
+        const [sessionRes, salesRes, alertsRes, prodRes, remindersRes] = await Promise.all([
           fetch("/api/auth/staff/session"),
           fetch("/api/sales/recent"),
           fetch("/api/inventory/alerts"),
           fetch(`/api/production?from=${new Date().toISOString().split("T")[0]}&to=${new Date().toISOString().split("T")[0]}`),
+          fetch("/api/inventory/reminders"),
         ]);
 
         const session = await sessionRes.json();
         const sales = await salesRes.json();
         const alerts = await alertsRes.json();
         const production = await prodRes.json();
+        const remindersData = await remindersRes.json();
 
         const today = Array.isArray(sales) ? sales.find((s: { date: string }) => s.date === new Date().toISOString().split("T")[0]) : null;
         const alertItems = Array.isArray(alerts) ? alerts : [];
@@ -43,6 +53,7 @@ export default function StaffDashboard() {
             low: alertItems.filter((a: { status: string }) => a.status === "low").length,
           },
           todayProduction: Array.isArray(production) ? production.length : 0,
+          reminders: Array.isArray(remindersData?.reminders) ? remindersData.reminders.slice(0, 5) : [],
         });
       } catch { /* */ }
       setLoading(false);
@@ -137,6 +148,29 @@ export default function StaffDashboard() {
             {data!.alerts.low > 0 && (
               <span className="text-warning">🟡 {data!.alerts.low} low stock</span>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Smart Reminders */}
+      {data && data.reminders && data.reminders.length > 0 && (
+        <div className="bg-staff-card rounded-xl border border-staff-border p-4">
+          <p className="text-sm font-semibold text-staff-text mb-2">
+            {lang === "en" ? "Reminders" : "Paalala"} ({data.reminders.length})
+          </p>
+          <div className="space-y-2">
+            {data.reminders.map((r, i) => (
+              <div key={i} className={`flex items-start gap-2 text-sm p-2 rounded-lg ${
+                r.severity === "critical" ? "bg-danger/5 border border-danger/20" :
+                r.severity === "warning" ? "bg-warning/5 border border-warning/20" :
+                "bg-info/5 border border-info/20"
+              }`}>
+                <span className="text-base mt-0.5">{
+                  r.severity === "critical" ? "🔴" : r.severity === "warning" ? "🟡" : "🔵"
+                }</span>
+                <span className="text-staff-text2 text-xs">{r.message}</span>
+              </div>
+            ))}
           </div>
         </div>
       )}

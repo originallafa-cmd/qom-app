@@ -44,12 +44,21 @@ export async function POST(request: Request) {
         const { vendor, amount, category, date: expDate } = data;
         const today = expDate || new Date().toISOString().split("T")[0];
 
-        // Get today's daily_sales entry to attach expense
-        const { data: salesEntry } = await supabase
+        // Get or create today's daily_sales entry
+        let { data: salesEntry } = await supabase
           .from("daily_sales")
           .select("id, expenses")
           .eq("date", today)
           .single();
+
+        if (!salesEntry) {
+          const { data: newEntry } = await supabase
+            .from("daily_sales")
+            .insert({ date: today, cash: 0, card: 0, talabat: 0, expenses: 0, opening_cash: 0, pt_cash: 0, staff_id: session.staffId })
+            .select("id, expenses")
+            .single();
+          salesEntry = newEntry;
+        }
 
         if (salesEntry) {
           // Add expense item

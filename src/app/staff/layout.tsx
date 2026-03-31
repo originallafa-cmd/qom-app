@@ -14,6 +14,7 @@ const navItems = [
   { href: "/staff/inventory", labelKey: "inventory" as const, icon: "📦" },
   { href: "/staff/production", labelKey: "production" as const, icon: "🍳" },
   { href: "/staff/receiving", labelKey: "receiving" as const, icon: "🚚" },
+  { href: "/staff/chat", labelKey: "search" as const, icon: "🤖" },
   { href: "/staff/help", labelKey: "back" as const, icon: "❓" },
 ];
 
