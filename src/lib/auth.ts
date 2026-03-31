@@ -1,9 +1,12 @@
 import { cookies } from "next/headers";
+import { sealData, unsealData } from "iron-session";
 import bcrypt from "bcryptjs";
 
-const STAFF_SESSION_COOKIE = "qom_staff_session";
-const ADMIN_SESSION_COOKIE = "qom_admin_session";
-const SESSION_MAX_AGE = 30 * 60; // 30 minutes
+const SESSION_SECRET = process.env.SESSION_SECRET || "dev-secret-change-in-production-min-32-chars!!";
+const STAFF_COOKIE = "qom_staff_session";
+const ADMIN_COOKIE = "qom_admin_session";
+const STAFF_MAX_AGE = 30 * 60; // 30 minutes
+const ADMIN_MAX_AGE = 8 * 60 * 60; // 8 hours
 
 export interface StaffSession {
   staffId: string;
@@ -16,7 +19,7 @@ export interface AdminSession {
   expiresAt: number;
 }
 
-// Staff PIN auth
+// PIN helpers
 export async function verifyStaffPin(pin: string, pinHash: string): Promise<boolean> {
   return bcrypt.compare(pin, pinHash);
 }
@@ -25,29 +28,32 @@ export async function hashPin(pin: string): Promise<string> {
   return bcrypt.hash(pin, 10);
 }
 
-// Staff session
+// ─── Staff Session ───────────────────────────────
+
 export async function setStaffSession(staffId: string, staffName: string) {
   const cookieStore = await cookies();
   const session: StaffSession = {
     staffId,
     staffName,
-    expiresAt: Date.now() + SESSION_MAX_AGE * 1000,
+    expiresAt: Date.now() + STAFF_MAX_AGE * 1000,
   };
-  cookieStore.set(STAFF_SESSION_COOKIE, JSON.stringify(session), {
+  const sealed = await sealData(session, { password: SESSION_SECRET, ttl: STAFF_MAX_AGE });
+  cookieStore.set(STAFF_COOKIE, sealed, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: SESSION_MAX_AGE,
+    maxAge: STAFF_MAX_AGE,
     path: "/",
   });
 }
 
 export async function getStaffSession(): Promise<StaffSession | null> {
   const cookieStore = await cookies();
-  const raw = cookieStore.get(STAFF_SESSION_COOKIE)?.value;
+  const raw = cookieStore.get(STAFF_COOKIE)?.value;
   if (!raw) return null;
   try {
-    const session: StaffSession = JSON.parse(raw);
+    const session = await unsealData<StaffSession>(raw, { password: SESSION_SECRET });
+    if (!session.staffId || !session.expiresAt) return null;
     if (session.expiresAt < Date.now()) {
       await clearStaffSession();
       return null;
@@ -60,31 +66,34 @@ export async function getStaffSession(): Promise<StaffSession | null> {
 
 export async function clearStaffSession() {
   const cookieStore = await cookies();
-  cookieStore.delete(STAFF_SESSION_COOKIE);
+  cookieStore.delete(STAFF_COOKIE);
 }
 
-// Admin session
+// ─── Admin Session ───────────────────────────────
+
 export async function setAdminSession() {
   const cookieStore = await cookies();
   const session: AdminSession = {
     authenticated: true,
-    expiresAt: Date.now() + 8 * 60 * 60 * 1000, // 8 hours
+    expiresAt: Date.now() + ADMIN_MAX_AGE * 1000,
   };
-  cookieStore.set(ADMIN_SESSION_COOKIE, JSON.stringify(session), {
+  const sealed = await sealData(session, { password: SESSION_SECRET, ttl: ADMIN_MAX_AGE });
+  cookieStore.set(ADMIN_COOKIE, sealed, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 8 * 60 * 60,
+    maxAge: ADMIN_MAX_AGE,
     path: "/",
   });
 }
 
 export async function getAdminSession(): Promise<AdminSession | null> {
   const cookieStore = await cookies();
-  const raw = cookieStore.get(ADMIN_SESSION_COOKIE)?.value;
+  const raw = cookieStore.get(ADMIN_COOKIE)?.value;
   if (!raw) return null;
   try {
-    const session: AdminSession = JSON.parse(raw);
+    const session = await unsealData<AdminSession>(raw, { password: SESSION_SECRET });
+    if (!session.authenticated || !session.expiresAt) return null;
     if (session.expiresAt < Date.now()) {
       await clearAdminSession();
       return null;
@@ -97,5 +106,5 @@ export async function getAdminSession(): Promise<AdminSession | null> {
 
 export async function clearAdminSession() {
   const cookieStore = await cookies();
-  cookieStore.delete(ADMIN_SESSION_COOKIE);
+  cookieStore.delete(ADMIN_COOKIE);
 }

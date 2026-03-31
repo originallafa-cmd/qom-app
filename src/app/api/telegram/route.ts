@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 
 async function sendMessage(chatId: number | string, text: string) {
   await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
@@ -21,6 +22,14 @@ function formatAED(n: number): string {
 
 export async function POST(request: Request) {
   try {
+    // Verify Telegram webhook secret
+    if (WEBHOOK_SECRET) {
+      const token = request.headers.get("x-telegram-bot-api-secret-token");
+      if (token !== WEBHOOK_SECRET) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
+
     const body = await request.json();
     const message = body.message;
     if (!message?.text) return NextResponse.json({ ok: true });

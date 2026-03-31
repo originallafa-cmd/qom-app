@@ -1,9 +1,20 @@
 import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { setStaffSession, verifyStaffPin } from "@/lib/auth";
+import { checkRateLimit, resetRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
+    // Rate limit by IP
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    const limit = checkRateLimit(`staff-login:${ip}`);
+    if (!limit.allowed) {
+      return NextResponse.json(
+        { error: "Too many attempts. Try again in " + Math.ceil(limit.resetIn / 60000) + " minutes." },
+        { status: 429 }
+      );
+    }
+
     const { pin } = await request.json();
 
     if (!pin || pin.length !== 4) {
@@ -27,6 +38,7 @@ export async function POST(request: Request) {
       const match = await verifyStaffPin(pin, staff.pin_hash);
       if (match) {
         await setStaffSession(staff.id, staff.name);
+        resetRateLimit(`staff-login:${ip}`);
 
         // Log login
         await supabase.from("audit_log").insert({

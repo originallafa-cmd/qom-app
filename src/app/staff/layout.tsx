@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
+import { useLang } from "@/lib/use-lang";
 
 const navItems = [
   { href: "/staff/dashboard", labelKey: "today" as const, icon: "🏠" },
@@ -22,7 +23,7 @@ export default function StaffLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [locale, setLocale] = useState<Locale>("en");
+  const [locale, setLocale] = useLang();
   const [staffName, setStaffName] = useState("");
 
   useEffect(() => {
