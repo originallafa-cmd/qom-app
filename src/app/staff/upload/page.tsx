@@ -56,6 +56,8 @@ export default function StaffUpload() {
     answer: "Your answer",
     send: "Send",
     askingYou: "AI needs more info:",
+    tellAI: "Tell AI something about this...",
+    reprocess: "Update",
   } : {
     title: "Mag-upload ng Dokumento",
     subtitle: "Kumuha ng litrato o pumili ng file — babasahin ng AI",
@@ -75,6 +77,8 @@ export default function StaffUpload() {
     answer: "Sagot mo",
     send: "Ipadala",
     askingYou: "Kailangan ng AI ng info:",
+    tellAI: "Sabihin sa AI tungkol dito...",
+    reprocess: "I-update",
   };
 
   async function handleUpload(file: File, context?: string) {
@@ -171,7 +175,7 @@ export default function StaffUpload() {
     setShowCamera(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment", width: { ideal: 1080 }, height: { ideal: 1920 } },
+        video: { facingMode: "environment" },
       });
       streamRef.current = stream;
       if (videoRef.current) {
@@ -180,7 +184,6 @@ export default function StaffUpload() {
       }
     } catch {
       setShowCamera(false);
-      // Fallback to file input if camera access denied
       fileRef.current?.click();
     }
   }
@@ -397,6 +400,34 @@ export default function StaffUpload() {
               {t.missing}: {result.missing.join(", ")}
             </div>
           )}
+
+          {/* Chat with AI about this photo */}
+          <div className="flex gap-2 mb-3">
+            <input
+              type="text"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && answer.trim() && selectedFile) {
+                  handleUpload(selectedFile, answer);
+                  setAnswer("");
+                }
+              }}
+              placeholder={t.tellAI}
+              className="flex-1 px-3 py-2.5 rounded-xl border border-staff-border bg-staff-bg text-staff-text text-sm"
+            />
+            <button
+              onClick={() => {
+                if (answer.trim() && selectedFile) {
+                  handleUpload(selectedFile, answer);
+                  setAnswer("");
+                }
+              }}
+              disabled={!answer.trim()}
+              className="px-4 py-2.5 rounded-xl bg-gold text-white text-sm font-medium disabled:opacity-40">
+              {t.reprocess}
+            </button>
+          </div>
 
           {/* Actions */}
           <div className="flex gap-2">
