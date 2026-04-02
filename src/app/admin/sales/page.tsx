@@ -131,8 +131,14 @@ export default function AdminSalesReports() {
           disabled={rows.length === 0}
           className="px-4 py-2 bg-teal text-white rounded-lg text-sm font-medium disabled:opacity-40"
         >
-          Export Excel
+          Export Page
         </button>
+        <a
+          href="/api/admin/sales-excel"
+          className="px-4 py-2 bg-gold text-white rounded-lg text-sm font-medium hover:bg-gold-dark"
+        >
+          Full Report .xlsx
+        </a>
       </div>
 
       {/* Filters */}
