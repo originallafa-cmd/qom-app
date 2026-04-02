@@ -31,7 +31,16 @@ const CATEGORIES = [
 
 export default function StaffSalesEntry() {
   const [lang, setLang] = useState<"en" | "fil">("en");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  // Business day: before 2 AM counts as yesterday
+  const [date, setDate] = useState(() => {
+    const now = new Date();
+    if (now.getHours() < 2) {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      return yesterday.toISOString().split("T")[0];
+    }
+    return now.toISOString().split("T")[0];
+  });
   const [cash, setCash] = useState("");
   const [card, setCard] = useState("");
   const [talabat, setTalabat] = useState("");
@@ -159,35 +168,61 @@ export default function StaffSalesEntry() {
     setSuccess(false);
 
     try {
+      const payload = {
+        date,
+        cash: numCash,
+        card: numCard,
+        talabat: numTalabat,
+        opening_cash: numOpening,
+        pt_cash: numPtCash,
+        notes: notes || null,
+        expense_items: expenseRows
+          .filter((r) => r.description && parseFloat(r.amount) > 0)
+          .map((r) => ({
+            description: r.description,
+            amount: parseFloat(r.amount),
+            category: r.category,
+          })),
+      };
+
       const res = await fetch("/api/sales", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          date,
-          cash: numCash,
-          card: numCard,
-          talabat: numTalabat,
-          opening_cash: numOpening,
-          pt_cash: numPtCash,
-          notes: notes || null,
-          expense_items: expenseRows
-            .filter((r) => r.description && parseFloat(r.amount) > 0)
-            .map((r) => ({
-              description: r.description,
-              amount: parseFloat(r.amount),
-              category: r.category,
-            })),
-        }),
+        body: JSON.stringify(payload),
       });
+
+      if (res.status === 409) {
+        // Entry already exists — ask to confirm update
+        const data = await res.json();
+        const confirmMsg = lang === "en"
+          ? `${data.message}\n\nDo you want to update it?`
+          : `May sales na para sa ${date} na sinumite ni ${data.submittedBy}. I-update ba?`;
+
+        if (confirm(confirmMsg)) {
+          // Resubmit with confirmUpdate flag
+          const res2 = await fetch("/api/sales", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...payload, confirmUpdate: true }),
+          });
+          if (res2.ok) {
+            setSuccess(true);
+            setCash(""); setCard(""); setTalabat(""); setPtCash(""); setNotes("");
+            setExpenseRows([{ _key: crypto.randomUUID(), description: "", amount: "", category: "vegetables" }]);
+            fetchRecent();
+            setTimeout(() => setSuccess(false), 3000);
+          } else {
+            const d = await res2.json();
+            setError(d.error || "Failed to update");
+          }
+        }
+        setLoading(false);
+        return;
+      }
 
       if (res.ok) {
         setSuccess(true);
-        // Reset form
-        setCash("");
-        setCard("");
-        setTalabat("");
-        setPtCash("");
-        setNotes("");
+        setCash(""); setCard(""); setTalabat(""); setPtCash(""); setNotes("");
         setExpenseRows([{ _key: crypto.randomUUID(), description: "", amount: "", category: "vegetables" }]);
         fetchRecent();
         setTimeout(() => setSuccess(false), 3000);

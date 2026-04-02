@@ -229,9 +229,10 @@ export default function AdminSalesReports() {
                   <th className="px-3 py-3 text-right text-admin-text3 font-medium">Total</th>
                   <th className="px-3 py-3 text-right text-admin-text3 font-medium">Expenses</th>
                   <th className="px-3 py-3 text-right text-admin-text3 font-medium">Net</th>
-                  {view === "daily" && (
+                  {view === "daily" && <>
                     <th className="px-3 py-3 text-right text-admin-text3 font-medium">Notes</th>
-                  )}
+                    <th className="px-3 py-3 text-right text-admin-text3 font-medium">By</th>
+                  </>}
                   {view !== "daily" && (
                     <th className="px-3 py-3 text-right text-admin-text3 font-medium">Avg/Day</th>
                   )}
@@ -279,9 +280,14 @@ export default function AdminSalesReports() {
                         {r.net.toFixed(2)}
                       </td>
                       {isDaily && (
-                        <td className="px-3 py-2.5 text-right text-admin-text3 text-xs max-w-32 truncate">
-                          {r.notes || "—"}
-                        </td>
+                        <>
+                          <td className="px-3 py-2.5 text-right text-admin-text3 text-xs max-w-32 truncate">
+                            {r.notes || "—"}
+                          </td>
+                          <td className="px-3 py-2.5 text-right text-admin-text2 text-xs">
+                            {(r as DailyRow).staff_name || "—"}
+                          </td>
+                        </>
                       )}
                       {!isDaily && (
                         <td className="px-3 py-2.5 text-right text-gold">
@@ -301,7 +307,7 @@ export default function AdminSalesReports() {
                   <td className="px-3 py-3 text-right text-admin-text">{totals.total.toFixed(2)}</td>
                   <td className="px-3 py-3 text-right text-danger">{totals.expenses.toFixed(0)}</td>
                   <td className="px-3 py-3 text-right text-teal">{totals.net.toFixed(2)}</td>
-                  {view === "daily" && <td />}
+                  {view === "daily" && <><td /><td /></>}
                   {view !== "daily" && (
                     <td className="px-3 py-3 text-right text-gold">
                       {(totals.total / (rows.length || 1)).toFixed(0)}

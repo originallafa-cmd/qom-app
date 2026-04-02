@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { date, cash, card, talabat, opening_cash, pt_cash, notes, expense_items } = body;
+    const { date, cash, card, talabat, opening_cash, pt_cash, notes, expense_items, confirmUpdate } = body;
 
     if (!date) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
@@ -18,22 +18,42 @@ export async function POST(request: Request) {
 
     const supabase = await createServiceSupabase();
 
+    // Business day ends at 2 AM — if it's before 2 AM, the "today" is actually yesterday
+    const now = new Date();
+    const hour = now.getHours();
+    let businessToday: string;
+    if (hour < 2) {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      businessToday = yesterday.toISOString().split("T")[0];
+    } else {
+      businessToday = now.toISOString().split("T")[0];
+    }
+
     // Check if entry already exists for this date
     const { data: existing } = await supabase
       .from("daily_sales")
-      .select("id, created_at")
+      .select("id, created_at, staff:staff_id(name)")
       .eq("date", date)
       .single();
 
     if (existing) {
-      // Check if same-day edit is allowed
-      const createdDate = new Date(existing.created_at).toISOString().split("T")[0];
-      const today = new Date().toISOString().split("T")[0];
-      if (createdDate !== today) {
+      // Same-day edit check: allow if date matches business today
+      if (date !== businessToday) {
         return NextResponse.json(
           { error: "Cannot edit previous day entries. Ask admin." },
           { status: 403 }
         );
+      }
+
+      // If not confirmed, tell frontend to ask user
+      if (!confirmUpdate) {
+        const submittedBy = (existing.staff as unknown as { name: string })?.name || "Unknown";
+        return NextResponse.json({
+          exists: true,
+          message: `Sales for ${date} already submitted by ${submittedBy}. Update it?`,
+          submittedBy,
+        }, { status: 409 });
       }
 
       // Update existing entry
