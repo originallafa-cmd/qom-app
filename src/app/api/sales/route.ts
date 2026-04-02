@@ -16,6 +16,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 });
     }
 
+    // Block dates more than 1 day in the future
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    if (date > tomorrow.toISOString().split("T")[0]) {
+      return NextResponse.json({ error: "Date cannot be in the future" }, { status: 400 });
+    }
+
     const supabase = await createServiceSupabase();
 
     // Business day ends at 2 AM — if it's before 2 AM, the "today" is actually yesterday
