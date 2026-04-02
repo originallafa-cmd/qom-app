@@ -35,6 +35,7 @@ export default function AdminInventory() {
   const [tab, setTab] = useState<InventoryType>("grocery");
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "ok" | "low" | "out">("all");
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -153,6 +154,8 @@ export default function AdminInventory() {
     { out: 0, low: 0 }
   );
 
+  const filteredItems = statusFilter === "all" ? items : items.filter(i => i.status === statusFilter);
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -219,15 +222,30 @@ export default function AdminInventory() {
       )}
 
       {/* Search */}
-      <label className="sr-only" htmlFor="inv-search">Search items</label>
-      <input
-        id="inv-search"
-        type="text"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        placeholder="Search items..."
-        className="w-full px-4 py-2 rounded-lg bg-admin-card border border-admin-border text-admin-text text-sm"
-      />
+      <div className="flex gap-2">
+        <label className="sr-only" htmlFor="inv-search">Search items</label>
+        <input
+          id="inv-search"
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search items..."
+          className="flex-1 px-4 py-2 rounded-lg bg-admin-card border border-admin-border text-admin-text text-sm"
+        />
+        {(["all", "out", "low", "ok"] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => setStatusFilter(s)}
+            className={`px-3 py-2 rounded-lg text-xs font-medium whitespace-nowrap ${
+              statusFilter === s
+                ? s === "out" ? "bg-danger text-white" : s === "low" ? "bg-warning text-white" : s === "ok" ? "bg-success text-white" : "bg-teal text-white"
+                : "bg-admin-card border border-admin-border text-admin-text2"
+            }`}
+          >
+            {s === "all" ? "All" : s.toUpperCase()}
+          </button>
+        ))}
+      </div>
 
       {/* Add Item Form */}
       {showAdd && (
@@ -261,7 +279,7 @@ export default function AdminInventory() {
       <div className="bg-admin-card rounded-xl border border-admin-border overflow-hidden">
         {loading ? (
           <div className="p-8 text-center text-admin-text2">Loading...</div>
-        ) : items.length === 0 ? (
+        ) : filteredItems.length === 0 ? (
           <div className="p-8 text-center text-admin-text3">No items in {tab}. Add some!</div>
         ) : (
           <div className="overflow-x-auto">
@@ -281,7 +299,7 @@ export default function AdminInventory() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => (
+                {filteredItems.map((item) => (
                   <tr key={item.id} className="border-b border-admin-border/50 hover:bg-admin-card-hover">
                     <td className="px-4 py-2.5 text-admin-text font-medium">{item.name}</td>
                     <td className="px-3 py-2.5 text-admin-text2">{item.category || "—"}</td>
