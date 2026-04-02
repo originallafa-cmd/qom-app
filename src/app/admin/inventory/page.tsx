@@ -20,6 +20,9 @@ interface InventoryItem {
   priority: string;
   supplier: string | null;
   notes: string | null;
+  updated_at: string;
+  last_counted_by?: string;
+  last_counted_at?: string;
 }
 
 const TABS: { value: InventoryType; label: string; count?: number }[] = [
@@ -273,6 +276,7 @@ export default function AdminInventory() {
                   <th className="px-3 py-3 text-right text-admin-text3 font-medium">Usage</th>
                   <th className="px-3 py-3 text-right text-admin-text3 font-medium">Time Left</th>
                   <th className="px-3 py-3 text-left text-admin-text3 font-medium">Supplier</th>
+                  <th className="px-3 py-3 text-left text-admin-text3 font-medium">Last Count</th>
                   <th className="px-3 py-3 text-center text-admin-text3 font-medium">Actions</th>
                 </tr>
               </thead>
@@ -315,6 +319,11 @@ export default function AdminInventory() {
                         : "—"}
                     </td>
                     <td className="px-3 py-2.5 text-admin-text2 text-xs">{item.supplier || "—"}</td>
+                    <td className="px-3 py-2.5 text-admin-text3 text-[10px]">
+                      {item.last_counted_at
+                        ? `${new Date(item.last_counted_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })} by ${item.last_counted_by}`
+                        : "Never"}
+                    </td>
                     <td className="px-3 py-2.5 text-center">
                       <div className="flex justify-center gap-1">
                         <button

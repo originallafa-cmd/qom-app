@@ -44,8 +44,15 @@ interface AggRow {
 
 export default function AdminSalesReports() {
   const [view, setView] = useState<View>("daily");
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
+  const [from, setFrom] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+  });
+  const [to, setTo] = useState(() => {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${lastDay}`;
+  });
   const [rows, setRows] = useState<(DailyRow | AggRow)[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -146,20 +153,36 @@ export default function AdminSalesReports() {
           ))}
         </div>
         <div className="flex gap-2">
-          <input
-            type="date"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
+          <select
+            value={from.slice(0, 4) || new Date().getFullYear().toString()}
+            onChange={(e) => {
+              const y = e.target.value;
+              const m = to.slice(5, 7) || "01";
+              setFrom(`${y}-${m}-01`);
+              const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+              setTo(`${y}-${m}-${String(lastDay).padStart(2, "0")}`);
+            }}
             className="px-3 py-2 rounded-lg bg-admin-card border border-admin-border text-admin-text text-sm"
-            placeholder="From"
-          />
-          <input
-            type="date"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
+          >
+            <option value="2025">2025</option>
+            <option value="2026">2026</option>
+            <option value="2027">2027</option>
+          </select>
+          <select
+            value={from.slice(5, 7) || "01"}
+            onChange={(e) => {
+              const y = from.slice(0, 4) || new Date().getFullYear().toString();
+              const m = e.target.value;
+              setFrom(`${y}-${m}-01`);
+              const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+              setTo(`${y}-${m}-${String(lastDay).padStart(2, "0")}`);
+            }}
             className="px-3 py-2 rounded-lg bg-admin-card border border-admin-border text-admin-text text-sm"
-            placeholder="To"
-          />
+          >
+            {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((name, i) => (
+              <option key={i} value={String(i + 1).padStart(2, "0")}>{name}</option>
+            ))}
+          </select>
         </div>
       </div>
 

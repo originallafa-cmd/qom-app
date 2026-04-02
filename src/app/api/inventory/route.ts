@@ -27,7 +27,36 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data || []);
+    // Get last count info for each item
+    const items = data || [];
+    const itemIds = items.map(i => i.id);
+
+    if (itemIds.length > 0) {
+      const { data: counts } = await supabase
+        .from("inventory_counts")
+        .select("item_id, qty, counted_at, staff:counted_by(name)")
+        .in("item_id", itemIds)
+        .order("counted_at", { ascending: false });
+
+      // Map last count per item
+      const lastCount: Record<string, { at: string; by: string }> = {};
+      (counts || []).forEach(c => {
+        if (!lastCount[c.item_id]) {
+          lastCount[c.item_id] = {
+            at: c.counted_at,
+            by: (c.staff as unknown as { name: string })?.name || "—",
+          };
+        }
+      });
+
+      return NextResponse.json(items.map(item => ({
+        ...item,
+        last_counted_at: lastCount[item.id]?.at || null,
+        last_counted_by: lastCount[item.id]?.by || null,
+      })));
+    }
+
+    return NextResponse.json(items);
   } catch {
     return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
