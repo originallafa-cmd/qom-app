@@ -19,6 +19,16 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Queen of Mahshi — ملكة المحشي",
   description: "Shop Management System for Queen of Mahshi Restaurant",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "QoM",
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({
