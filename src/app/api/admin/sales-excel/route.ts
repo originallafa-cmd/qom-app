@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { createServiceSupabase } from "@/lib/supabase/server";
 import { requireStaffOrAdmin, unauthorizedResponse } from "@/lib/api-auth";
 import * as XLSX from "xlsx";
+import { readFile, writeFile } from "fs/promises";
+
+const SOURCE_FILE = "D:\\QoM_Sales_Report_updated.xlsx";
 
 export async function GET() {
   try {
@@ -10,7 +13,16 @@ export async function GET() {
 
     const supabase = await createServiceSupabase();
 
-    // Get all sales data
+    // Read the existing Excel file as template
+    let wb: XLSX.WorkBook;
+    try {
+      const buf = await readFile(SOURCE_FILE);
+      wb = XLSX.read(buf);
+    } catch {
+      return NextResponse.json({ error: "Source Excel file not found on server" }, { status: 500 });
+    }
+
+    // Get all sales data from DB
     const { data: sales } = await supabase
       .from("daily_sales")
       .select("date, cash, card, talabat, total, expenses, net, notes, opening_cash, pt_cash, closing_cash, staff:staff_id(name)")
@@ -19,92 +31,99 @@ export async function GET() {
     const allSales = sales || [];
 
     // Group by month
-    const months: Record<string, typeof allSales> = {};
+    const monthNames: Record<string, string> = {
+      "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr", "05": "May", "06": "Jun",
+      "07": "Jul", "08": "Aug", "09": "Sep", "10": "Oct", "11": "Nov", "12": "Dec",
+    };
+
+    const salesByMonth: Record<string, typeof allSales> = {};
     allSales.forEach(s => {
-      const monthKey = s.date.slice(0, 7); // "2026-04"
-      if (!months[monthKey]) months[monthKey] = [];
-      months[monthKey].push(s);
+      const [year, mon] = s.date.split("-");
+      const sheetName = `${monthNames[mon]} ${year}`;
+      if (!salesByMonth[sheetName]) salesByMonth[sheetName] = [];
+      salesByMonth[sheetName].push(s);
     });
 
-    // Create workbook
-    const wb = XLSX.utils.book_new();
+    // Update each monthly sheet in the existing workbook
+    for (const [sheetName, rows] of Object.entries(salesByMonth)) {
+      if (!wb.SheetNames.includes(sheetName)) {
+        // Sheet doesn't exist — create it
+        const ws = XLSX.utils.aoa_to_sheet([]);
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      }
 
-    // Summary sheet
-    const summaryData = Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).map(([month, rows]) => {
-      const total = rows.reduce((s, r) => s + (r.total || 0), 0);
-      const cash = rows.reduce((s, r) => s + (r.cash || 0), 0);
-      const card = rows.reduce((s, r) => s + (r.card || 0), 0);
-      const talabat = rows.reduce((s, r) => s + (r.talabat || 0), 0);
-      const expenses = rows.reduce((s, r) => s + (r.expenses || 0), 0);
-      return {
-        Month: month,
-        Days: rows.length,
-        Cash: cash,
-        Card: card,
-        Talabat: talabat,
-        "Total Sales": total,
-        Expenses: expenses,
-        Net: total - expenses,
-        "Avg/Day": rows.length > 0 ? Math.round(total / rows.length * 100) / 100 : 0,
-        "Cash %": total > 0 ? Math.round(cash / total * 1000) / 10 : 0,
-        "Card %": total > 0 ? Math.round(card / total * 1000) / 10 : 0,
-        "Talabat %": total > 0 ? Math.round(talabat / total * 1000) / 10 : 0,
-      };
-    });
-    const summaryWs = XLSX.utils.json_to_sheet(summaryData);
-    summaryWs["!cols"] = [{ wch: 10 }, { wch: 6 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 8 }, { wch: 8 }, { wch: 10 }];
-    XLSX.utils.book_append_sheet(wb, summaryWs, "Summary");
+      const ws = wb.Sheets[sheetName];
 
-    // Monthly sheets
-    const monthNames = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    Object.entries(months).sort(([a], [b]) => a.localeCompare(b)).forEach(([month, rows]) => {
-      const [year, mon] = month.split("-");
-      const sheetName = `${monthNames[parseInt(mon)]} ${year}`;
+      // Find the header row (contains "Date", "Cash", etc.)
+      const sheetData = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 });
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(sheetData.length, 10); i++) {
+        const row = sheetData[i];
+        if (row && row.some((c: string) => String(c || "").toLowerCase() === "date")) {
+          headerIdx = i;
+          break;
+        }
+      }
 
-      const sheetData = rows.map(r => ({
-        Date: r.date,
-        Cash: r.cash,
-        Card: r.card,
-        Talabat: r.talabat,
-        "Total Sales": r.total,
-        Expenses: r.expenses,
-        Net: r.net,
-        Notes: r.notes || "",
-        "Opening Cash": r.opening_cash,
-        "PT Cash": r.pt_cash,
-        "Closing Cash": r.closing_cash,
-        "Submitted By": (r.staff as unknown as { name: string })?.name || "",
-      }));
+      if (headerIdx === -1) {
+        // No header found — write fresh with header
+        headerIdx = 1; // Leave row 0 for title
+        XLSX.utils.sheet_add_aoa(ws, [[sheetName]], { origin: "A1" });
+        XLSX.utils.sheet_add_aoa(ws, [["Date", "Cash", "Card", "Talabat", "Total Sales", "Expenses", "Net", "Notes", "Opening Cash", "PT Cash Top-up", "Closing Cash"]], { origin: `A${headerIdx + 1}` });
+      }
 
-      // Add totals row
-      const totals = {
-        Date: "TOTAL",
-        Cash: rows.reduce((s, r) => s + (r.cash || 0), 0),
-        Card: rows.reduce((s, r) => s + (r.card || 0), 0),
-        Talabat: rows.reduce((s, r) => s + (r.talabat || 0), 0),
-        "Total Sales": rows.reduce((s, r) => s + (r.total || 0), 0),
-        Expenses: rows.reduce((s, r) => s + (r.expenses || 0), 0),
-        Net: rows.reduce((s, r) => s + (r.net || 0), 0),
-        Notes: "",
-        "Opening Cash": "",
-        "PT Cash": "",
-        "Closing Cash": "",
-        "Submitted By": `${rows.length} days`,
-      };
-      sheetData.push(totals as typeof sheetData[0]);
+      const headers = sheetData[headerIdx] || [];
+      const colMap: Record<string, number> = {};
+      headers.forEach((h: string, i: number) => {
+        const key = String(h || "").toLowerCase().trim();
+        if (key.includes("date")) colMap.date = i;
+        if (key.includes("cash") && !key.includes("opening") && !key.includes("closing") && !key.includes("pt")) colMap.cash = i;
+        if (key.includes("card")) colMap.card = i;
+        if (key.includes("talabat")) colMap.talabat = i;
+        if (key.includes("total")) colMap.total = i;
+        if (key.includes("expense")) colMap.expenses = i;
+        if (key.includes("net")) colMap.net = i;
+        if (key.includes("note")) colMap.notes = i;
+        if (key.includes("opening")) colMap.opening = i;
+        if (key.includes("pt") || key.includes("top")) colMap.ptcash = i;
+        if (key.includes("closing")) colMap.closing = i;
+      });
 
-      const ws = XLSX.utils.json_to_sheet(sheetData);
-      ws["!cols"] = [{ wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 20 }, { wch: 12 }, { wch: 10 }, { wch: 12 }, { wch: 14 }];
-      XLSX.utils.book_append_sheet(wb, ws, sheetName.slice(0, 31));
-    });
+      // Write each day's data into the correct row
+      rows.forEach((sale, idx) => {
+        const rowNum = headerIdx + 1 + idx; // 0-indexed in sheet_add_aoa
+        const rowData = new Array(Math.max(...Object.values(colMap)) + 1).fill("");
 
-    // Generate buffer
-    const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+        if (colMap.date !== undefined) rowData[colMap.date] = sale.date;
+        if (colMap.cash !== undefined) rowData[colMap.cash] = sale.cash;
+        if (colMap.card !== undefined) rowData[colMap.card] = sale.card;
+        if (colMap.talabat !== undefined) rowData[colMap.talabat] = sale.talabat;
+        if (colMap.total !== undefined) rowData[colMap.total] = sale.total;
+        if (colMap.expenses !== undefined) rowData[colMap.expenses] = sale.expenses;
+        if (colMap.net !== undefined) rowData[colMap.net] = sale.net;
+        if (colMap.notes !== undefined) rowData[colMap.notes] = sale.notes || "";
+        if (colMap.opening !== undefined) rowData[colMap.opening] = sale.opening_cash;
+        if (colMap.ptcash !== undefined) rowData[colMap.ptcash] = sale.pt_cash;
+        if (colMap.closing !== undefined) rowData[colMap.closing] = sale.closing_cash;
 
-    return new NextResponse(buf, {
+        XLSX.utils.sheet_add_aoa(ws, [rowData], { origin: `A${rowNum + 1}` });
+      });
+    }
+
+    // Save updated file back to D:\
+    const outBuf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+    await writeFile(SOURCE_FILE, outBuf);
+
+    // Also save to vault
+    try {
+      await writeFile("D:\\vault\\01 - Queen of Mahshi\\Finance\\QoM_Sales_Report_updated.xlsx", outBuf);
+    } catch { /* vault copy is optional */ }
+
+    // Return the file as download
+    return new NextResponse(outBuf, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="QoM_Sales_Report_${new Date().toISOString().split("T")[0]}.xlsx"`,
+        "Content-Disposition": `attachment; filename="QoM_Sales_Report_updated.xlsx"`,
       },
     });
   } catch (err) {
