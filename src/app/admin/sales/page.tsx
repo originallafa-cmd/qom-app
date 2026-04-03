@@ -370,6 +370,13 @@ export default function AdminSalesReports() {
               </div>
             );
           })()}
+
+          {/* Report Photo */}
+          {(() => {
+            const row = (rows as DailyRow[]).find((r) => r.id === expandedRow);
+            if (!row) return null;
+            return <ReportPhoto date={row.date} />;
+          })()}
         </div>
       )}
     </div>
@@ -381,6 +388,41 @@ function SummaryCard({ label, value }: { label: string; value: string }) {
     <div className="bg-admin-card rounded-lg border border-admin-border p-3">
       <p className="text-[10px] text-admin-text3">{label}</p>
       <p className="text-sm font-bold text-admin-text mt-0.5">{value}</p>
+    </div>
+  );
+}
+
+function ReportPhoto({ date }: { date: string }) {
+  const [photo, setPhoto] = useState<{ found: boolean; url?: string; fileName?: string } | null>(null);
+  const [showPhoto, setShowPhoto] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/sales/report-photo?date=${date}`)
+      .then(r => r.json())
+      .then(setPhoto)
+      .catch(() => setPhoto({ found: false }));
+  }, [date]);
+
+  if (!photo || !photo.found) {
+    return <p className="text-xs text-admin-text3 mt-3">No report photo for this day</p>;
+  }
+
+  return (
+    <div className="mt-3 border-t border-admin-border pt-3">
+      <div className="flex items-center gap-3">
+        <span className="text-xs text-admin-text2">📸 Daily Report Photo</span>
+        <button onClick={() => setShowPhoto(!showPhoto)}
+          className="text-xs text-teal hover:underline">
+          {showPhoto ? "Hide" : "View"}
+        </button>
+        <a href={photo.url} target="_blank" rel="noopener noreferrer" download
+          className="text-xs text-gold hover:underline">
+          Download
+        </a>
+      </div>
+      {showPhoto && photo.url && (
+        <img src={photo.url} alt={`Report ${date}`} className="mt-2 max-h-96 rounded-lg border border-admin-border" />
+      )}
     </div>
   );
 }

@@ -41,6 +41,8 @@ export default function StaffSalesEntry() {
     }
     return now.toISOString().split("T")[0];
   });
+  const [reportPhoto, setReportPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [cash, setCash] = useState("");
   const [card, setCard] = useState("");
   const [talabat, setTalabat] = useState("");
@@ -161,13 +163,32 @@ export default function StaffSalesEntry() {
     setExpenseRows(expenseRows.filter((_, i) => i !== index));
   }
 
+  async function uploadReportPhoto(): Promise<string | null> {
+    if (!reportPhoto) return null;
+    const formData = new FormData();
+    formData.append("file", reportPhoto);
+    formData.append("date", date);
+    try {
+      const res = await fetch("/api/sales/upload-report", { method: "POST", body: formData });
+      const data = await res.json();
+      return data.path || null;
+    } catch { return null; }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!reportPhoto) {
+      setError(lang === "en" ? "Please attach a photo of the daily report" : "Maglagay ng litrato ng daily report");
+      return;
+    }
     setLoading(true);
     setError("");
     setSuccess(false);
 
     try {
+      // Upload photo first
+      const photoPath = await uploadReportPhoto();
+
       const payload = {
         date,
         cash: numCash,
@@ -207,7 +228,7 @@ export default function StaffSalesEntry() {
           });
           if (res2.ok) {
             setSuccess(true);
-            setCash(""); setCard(""); setTalabat(""); setPtCash(""); setNotes("");
+            setCash(""); setCard(""); setTalabat(""); setPtCash(""); setNotes(""); setReportPhoto(null); setPhotoPreview(null);
             setExpenseRows([{ _key: crypto.randomUUID(), description: "", amount: "", category: "vegetables" }]);
             fetchRecent();
             setTimeout(() => setSuccess(false), 3000);
@@ -222,7 +243,7 @@ export default function StaffSalesEntry() {
 
       if (res.ok) {
         setSuccess(true);
-        setCash(""); setCard(""); setTalabat(""); setPtCash(""); setNotes("");
+        setCash(""); setCard(""); setTalabat(""); setPtCash(""); setNotes(""); setReportPhoto(null); setPhotoPreview(null);
         setExpenseRows([{ _key: crypto.randomUUID(), description: "", amount: "", category: "vegetables" }]);
         fetchRecent();
         setTimeout(() => setSuccess(false), 3000);
@@ -449,10 +470,48 @@ export default function StaffSalesEntry() {
           </div>
         </div>
 
+        {/* Mandatory Report Photo */}
+        <div className={`rounded-xl border p-4 ${reportPhoto ? "bg-success/5 border-success/20" : "bg-warning/5 border-warning/20"}`}>
+          <p className="text-sm font-semibold text-staff-text mb-1">
+            {lang === "en" ? "📸 Daily Report Photo (Required)" : "📸 Litrato ng Report (Kinakailangan)"}
+          </p>
+          <p className="text-xs text-staff-text2 mb-3">
+            {lang === "en" ? "Take a photo of the handwritten daily summary report" : "Kumuha ng litrato ng sulat-kamay na daily report"}
+          </p>
+          {photoPreview ? (
+            <div className="relative">
+              <img src={photoPreview} alt="Report" className="w-full max-h-48 object-contain rounded-lg" />
+              <button
+                type="button"
+                onClick={() => { setReportPhoto(null); setPhotoPreview(null); }}
+                className="absolute top-2 right-2 w-7 h-7 bg-danger text-white rounded-full text-sm flex items-center justify-center"
+              >×</button>
+              <p className="text-xs text-success mt-1 text-center">✓ {lang === "en" ? "Photo attached" : "May litrato na"}</p>
+            </div>
+          ) : (
+            <label className="block w-full py-3 rounded-xl bg-teal/10 border-2 border-dashed border-teal/30 text-teal font-medium text-center cursor-pointer hover:bg-teal/20 transition-colors">
+              {lang === "en" ? "Take Photo / Choose File" : "Kumuha ng Litrato / Pumili ng File"}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setReportPhoto(file);
+                    setPhotoPreview(URL.createObjectURL(file));
+                  }
+                }}
+                className="hidden"
+              />
+            </label>
+          )}
+        </div>
+
         {/* Submit */}
         <button
           type="submit"
-          disabled={loading || totalSales === 0}
+          disabled={loading || totalSales === 0 || !reportPhoto}
           className="w-full py-3 rounded-xl bg-teal text-white font-semibold text-lg hover:bg-teal-dark transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         >
           {loading ? tx.submitting : tx.submit}
